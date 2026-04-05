@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casos de Estudio — Ciberseguridad</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg:        #04060a;
+    --panel:     #080c14;
+    --surface:   #0c1220;
+    --border:    #141e30;
+    --border-hi: #1e3050;
+    --cyan:      #00e5ff;
+    --green:     #00ff88;
+    --amber:     #ffb800;
+    --red:       #ff3a3a;
+    --purple:    #a855f7;
+    --orange:    #ff6b00;
+    --muted:     #2e4460;
+    --white:     #c8dff0;
+    --font-d: 'Orbitron', monospace;
+    --font-m: 'Share Tech Mono', monospace;
+    --font-b: 'Rajdhani', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font-b);
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px,
+      rgba(0,229,255,0.007) 3px, rgba(0,229,255,0.007) 4px
+    );
+    pointer-events: none;
+    z-index: 9000;
+  }
+
+  /* subtle animated grid */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.018) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridDrift 35s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes gridDrift {
+    from { background-position: 0 0; }
+    to   { background-position: 60px 60px; }
+  }
+
+  /* ── PAGE WRAPPER ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 88px 44px 100px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    margin-bottom: 64px;
+    opacity: 0;
+    animation: fadeSlide 0.6s ease 0.05s forwards;
+  }
+
+  .header-eyebrow {
+    font-family: var(--font-m);
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  .header-title {
+    font-family: var(--font-d);
+    font-size: clamp(38px, 7vw, 82px);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+
+  .header-title .w1 {
+    display: block;
+    color: var(--white);
+  }
+
+  .header-title .w2 {
+    display: block;
+    color: var(--cyan);
+    text-shadow:
+      0 0 40px rgba(0,229,255,0.5),
+      0 0 100px rgba(0,229,255,0.15);
+  }
+
+  /* animated line */
+  .header-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+      var(--cyan) 0%,
+      rgba(0,229,255,0.15) 60%,
+      transparent 100%
+    );
+    margin-top: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header-line::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.9), transparent);
+    animation: lineScan 4s ease-in-out infinite;
+  }
+  @keyframes lineScan {
+    0%   { left: -40%; }
+    100% { left: 140%; }
+  }
+
+  /* ── CASES LIST ── */
+  .cases {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 44px;
+  }
+
+  /* ── SINGLE CASE ROW ── */
+  .case {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: stretch;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeSlide 0.5s ease forwards;
+    transition:
+      border-color 0.22s,
+      background   0.22s,
+      transform    0.18s,
+      box-shadow   0.22s;
+  }
+
+  .case:hover {
+    border-color: var(--border-hi);
+    background: var(--surface);
+    transform: translateX(5px);
+  }
+
+  /* Left color accent */
+  .case::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    opacity: 0;
+    transition: opacity 0.22s;
+  }
+  .case:hover::before { opacity: 1; }
+
+  /* accent colors */
+  .case.t-red::before    { background: var(--red); }
+  .case.t-amber::before  { background: var(--amber); }
+  .case.t-cyan::before   { background: var(--cyan); }
+  .case.t-green::before  { background: var(--green); }
+  .case.t-purple::before { background: var(--purple); }
+  .case.t-orange::before { background: var(--orange); }
+
+  /* box-shadow on hover */
+  .case.t-red:hover    { box-shadow: 0 8px 32px rgba(255,58,58,0.1); border-color: rgba(255,58,58,0.3); }
+  .case.t-amber:hover  { box-shadow: 0 8px 32px rgba(255,184,0,0.1); border-color: rgba(255,184,0,0.3); }
+  .case.t-cyan:hover   { box-shadow: 0 8px 32px rgba(0,229,255,0.1); border-color: rgba(0,229,255,0.3); }
+  .case.t-green:hover  { box-shadow: 0 8px 32px rgba(0,255,136,0.1); border-color: rgba(0,255,136,0.3); }
+  .case.t-purple:hover { box-shadow: 0 8px 32px rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.3); }
+  .case.t-orange:hover { box-shadow: 0 8px 32px rgba(255,107,0,0.1); border-color: rgba(255,107,0,0.3); }
+
+  /* Column — Number */
+  .case-num {
+    font-family: var(--font-m);
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-right: 1px solid var(--border);
+    transition: color 0.22s;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .case:hover .case-num { color: rgba(200,223,240,0.5); }
+
+  /* Column — Content */
+  .case-content {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .case-name {
+    font-family: var(--font-d);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    transition: color 0.22s;
+    line-height: 1.1;
+  }
+
+  .case.t-red:hover    .case-name { color: var(--red); }
+  .case.t-amber:hover  .case-name { color: var(--amber); }
+  .case.t-cyan:hover   .case-name { color: var(--cyan); }
+  .case.t-green:hover  .case-name { color: var(--green); }
+  .case.t-purple:hover .case-name { color: var(--purple); }
+  .case.t-orange:hover .case-name { color: var(--orange); }
+
+  .case-sub {
+    font-family: var(--font-m);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+  }
+
+  /* Column — Year + arrow */
+  .case-right {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .case-year {
+    font-family: var(--font-m);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    transition: color 0.22s;
+  }
+
+  .case.t-red:hover    .case-year { color: rgba(255,58,58,0.6); }
+  .case.t-amber:hover  .case-year { color: rgba(255,184,0,0.6); }
+  .case.t-cyan:hover   .case-year { color: rgba(0,229,255,0.6); }
+  .case.t-green:hover  .case-year { color: rgba(0,255,136,0.6); }
+  .case.t-purple:hover .case-year { color: rgba(168,85,247,0.6); }
+  .case.t-orange:hover .case-year { color: rgba(255,107,0,0.6); }
+
+  .case-arrow {
+    font-size: 15px;
+    color: var(--muted);
+    transition: color 0.22s, transform 0.22s;
+  }
+
+  .case:hover .case-arrow { transform: translateX(3px); }
+  .case.t-red:hover    .case-arrow { color: var(--red); }
+  .case.t-amber:hover  .case-arrow { color: var(--amber); }
+  .case.t-cyan:hover   .case-arrow { color: var(--cyan); }
+  .case.t-green:hover  .case-arrow { color: var(--green); }
+  .case.t-purple:hover .case-arrow { color: var(--purple); }
+  .case.t-orange:hover .case-arrow { color: var(--orange); }
+
+  /* ── PENDING ── */
+  .case.pending {
+    opacity: 0 !important;
+    pointer-events: none;
+    animation: none !important;
+    /* ← Las filas pendientes están completamente ocultas.
+          Para mostrarlas (aunque sin link), quita el opacity:0
+          y añade opacity: 0.3 en su lugar. */
+  }
+
+  /* ── STAGGER ── */
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .cases .case:nth-child(1)  { animation-delay: 0.10s; }
+  .cases .case:nth-child(2)  { animation-delay: 0.18s; }
+  .cases .case:nth-child(3)  { animation-delay: 0.26s; }
+  .cases .case:nth-child(4)  { animation-delay: 0.34s; }
+  .cases .case:nth-child(5)  { animation-delay: 0.42s; }
+  .cases .case:nth-child(6)  { animation-delay: 0.50s; }
+  .cases .case:nth-child(7)  { animation-delay: 0.58s; }
+  .cases .case:nth-child(8)  { animation-delay: 0.66s; }
+  .cases .case:nth-child(9)  { animation-delay: 0.74s; }
+  .cases .case:nth-child(10) { animation-delay: 0.82s; }
+  .cases .case:nth-child(11) { animation-delay: 0.90s; }
+  .cases .case:nth-child(12) { animation-delay: 0.98s; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-m);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeSlide 0.5s ease 1.1s forwards;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .page { padding: 56px 20px 72px; }
+    .case { grid-template-columns: 40px 1fr; }
+    .case-right { display: none; }
+    .case-content { padding: 18px 20px; }
+    .case-num { font-size: 9px; }
+    .header-title { font-size: clamp(32px, 10vw, 60px); }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<div class="page">
+
+  <!-- ════════════════════════════
+       HEADER
+  ════════════════════════════ -->
+  <header class="header">
+    <div class="header-eyebrow">// Análisis Forense</div>
+    <h1 class="header-title">
+      <span class="w1">Casos de</span>
+      <span class="w2">Estudio</span>
+    </h1>
+    <div class="header-line"></div>
+  </header>
+
+  <!-- ════════════════════════════
+       LISTA DE CASOS
+
+       Para añadir un caso nuevo:
+         1. Descomenta el bloque correspondiente
+         2. Pon el href correcto (./nombre-archivo.html)
+         3. Quita la clase "pending"
+  ════════════════════════════ -->
+  <div class="cases">
+
+    <!-- ══════════════════════════════════════
+         CASO 01 — UBER DATA BREACH 2022
+         Archivo: uber-breach-2022.html
+    ══════════════════════════════════════ -->
+    <a href="./uber-breach-2022.html"
+       class="case t-red">
+      <div class="case-num">01</div>
+      <div class="case-content">
+        <div class="case-name">Uber Data Breach</div>
+        <div class="case-sub">MFA Fatigue · Credenciales Hardcodeadas · PAM Compromise</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2022</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- ══════════════════════════════════════
+         CASO 02 — STUXNET 2010
+         Archivo: stuxnet-caso-estudio.html
+    ══════════════════════════════════════ -->
+    <a href="./stuxnet-caso-estudio.html"
+       class="case t-amber">
+      <div class="case-num">02</div>
+      <div class="case-content">
+        <div class="case-name">Stuxnet</div>
+        <div class="case-sub">Zero-Days · ICS/SCADA · Cyberweapon · Air Gap</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2010</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+
+    <!--
+    ════════════════════════════════════════════════════════
+    CASOS PENDIENTES
+    Para activar: descomenta el bloque, quita "pending",
+    actualiza el href al nombre real del archivo HTML.
+
+    Colores disponibles para la clase: t-red | t-amber |
+    t-cyan | t-green | t-purple | t-orange
+    ════════════════════════════════════════════════════════
+    -->
+
+    <!-- CASO 03 — WannaCry 2017
+    <a href="./wannacry-2017.html"
+       class="case t-orange pending">
+      <div class="case-num">03</div>
+      <div class="case-content">
+        <div class="case-name">WannaCry</div>
+        <div class="case-sub">Ransomware · EternalBlue · North Korea · 150 países</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2017</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 04 — SolarWinds 2020
+    <a href="./solarwinds-2020.html"
+       class="case t-cyan pending">
+      <div class="case-num">04</div>
+      <div class="case-content">
+        <div class="case-name">SolarWinds</div>
+        <div class="case-sub">Supply Chain · SUNBURST · SVR Russia · 18,000 orgs</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2020</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 05 — Colonial Pipeline 2021
+    <a href="./colonial-pipeline-2021.html"
+       class="case t-red pending">
+      <div class="case-num">05</div>
+      <div class="case-content">
+        <div class="case-name">Colonial Pipeline</div>
+        <div class="case-sub">Ransomware · DarkSide · Infraestructura Crítica · VPN</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2021</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 06 — Equifax 2017
+    <a href="./equifax-2017.html"
+       class="case t-purple pending">
+      <div class="case-num">06</div>
+      <div class="case-content">
+        <div class="case-name">Equifax Breach</div>
+        <div class="case-sub">Apache Struts · 147M registros · Patch sin aplicar</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2017</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 07 — Mirai Botnet 2016
+    <a href="./mirai-botnet-2016.html"
+       class="case t-green pending">
+      <div class="case-num">07</div>
+      <div class="case-content">
+        <div class="case-name">Mirai Botnet</div>
+        <div class="case-sub">IoT · DDoS 620Gbps · Credenciales Default · Dyn</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2016</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 08 — Target Breach 2013
+    <a href="./target-breach-2013.html"
+       class="case t-red pending">
+      <div class="case-num">08</div>
+      <div class="case-content">
+        <div class="case-name">Target Breach</div>
+        <div class="case-sub">POS Malware · HVAC Vendor · 40M tarjetas robadas</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2013</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 09 — Twitter Hack 2020
+    <a href="./twitter-hack-2020.html"
+       class="case t-cyan pending">
+      <div class="case-num">09</div>
+      <div class="case-content">
+        <div class="case-name">Twitter Hack</div>
+        <div class="case-sub">Vishing · Account Takeover · Obama · Musk · Bitcoin</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2020</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 10 — LastPass Breach 2022
+    <a href="./lastpass-breach-2022.html"
+       class="case t-purple pending">
+      <div class="case-num">10</div>
+      <div class="case-content">
+        <div class="case-name">LastPass Breach</div>
+        <div class="case-sub">DevOps · Home PC Attack · Encrypted Vaults · 33M usuarios</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2022</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 11 — MGM Resorts 2023
+    <a href="./mgm-breach-2023.html"
+       class="case t-orange pending">
+      <div class="case-num">11</div>
+      <div class="case-content">
+        <div class="case-name">MGM Resorts</div>
+        <div class="case-sub">Scattered Spider · Vishing · Okta · $100M pérdidas</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2023</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+    <!-- CASO 12 — Sony Pictures Hack 2014
+    <a href="./sony-hack-2014.html"
+       class="case t-purple pending">
+      <div class="case-num">12</div>
+      <div class="case-content">
+        <div class="case-name">Sony Pictures Hack</div>
+        <div class="case-sub">Lazarus Group · Wiper · DPRK · Hollywood</div>
+      </div>
+      <div class="case-right">
+        <span class="case-year">2014</span>
+        <span class="case-arrow">→</span>
+      </div>
+    </a>
+    -->
+
+  </div><!-- end .cases -->
+
+  <!-- ════════════════════════
+       FOOTER
+  ════════════════════════ -->
+  <footer class="footer">
+    <span>// casos-de-estudio</span>
+    <span>Ciberseguridad</span>
+  </footer>
+
+</div><!-- end .page -->
+
+</body>
+</html>

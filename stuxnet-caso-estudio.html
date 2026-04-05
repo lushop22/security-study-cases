@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUXNET — El Primer Arma Cibernética de la Historia</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080805;
+    --deep: #0c0b08;
+    --panel: #111008;
+    --surface: #181510;
+    --border: #2a2416;
+    --border-glow: #5a4a10;
+    --red: #ff3a1a;
+    --red-dim: #c02810;
+    --amber: #ffb800;
+    --amber-dim: #c08800;
+    --green: #39ff14;
+    --green-dim: #1a8a08;
+    --cyan: #00e5d4;
+    --cyan-dim: #008880;
+    --purple: #c060ff;
+    --orange: #ff6b00;
+    --white: #f0e8d8;
+    --muted: #6a5a3a;
+    --font-d: 'Syne', sans-serif;
+    --font-m: 'DM Mono', monospace;
+    --font-b: 'Newsreader', serif;
+    --glow-red: 0 0 24px rgba(255,58,26,0.45);
+    --glow-amber: 0 0 20px rgba(255,184,0,0.4);
+    --glow-green: 0 0 20px rgba(57,255,20,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--white); font-family: var(--font-b); font-size: 17px; line-height: 1.7; overflow-x: hidden; }
+
+  /* noise + scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,184,0,0.006) 3px, rgba(255,184,0,0.006) 4px),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9990;
+  }
+
+  /* animated danger grid */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,0,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,0,0.022) 1px, transparent 1px);
+    background-size: 56px 56px;
+    animation: gridMove 28s linear infinite;
+    pointer-events: none; z-index: 0;
+  }
+  @keyframes gridMove { from{background-position:0 0} to{background-position:56px 56px} }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 40px 80px;
+    overflow: hidden;
+    z-index: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 20%, rgba(255,58,26,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 80% 70%, rgba(255,184,0,0.07) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  .hero-alert {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255,58,26,0.15) 0px,
+      rgba(255,58,26,0.15) 40px,
+      transparent 40px,
+      transparent 80px
+    );
+    height: 4px;
+    animation: alertPulse 2s ease-in-out infinite;
+  }
+  @keyframes alertPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  .hero-stamp {
+    position: absolute;
+    top: 50%;
+    right: 60px;
+    transform: translateY(-50%) rotate(12deg);
+    font-family: var(--font-d);
+    font-size: clamp(60px, 9vw, 120px);
+    font-weight: 800;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255,58,26,0.15);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-c { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  .hero-eyebrow {
+    font-family: var(--font-m);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before { content: '⚠'; font-size: 12px; }
+  .hero-eyebrow::after { content: '⚠'; font-size: 12px; }
+
+  .hero h1 {
+    font-family: var(--font-d);
+    font-weight: 800;
+    font-size: clamp(64px, 11vw, 140px);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 .l1 {
+    display: block;
+    color: var(--red);
+    text-shadow: var(--glow-red), 0 0 80px rgba(255,58,26,0.2);
+  }
+
+  .hero h1 .l2 {
+    display: block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(240,232,216,0.12);
+    font-size: 0.42em;
+    letter-spacing: 0.15em;
+    margin-top: 12px;
+  }
+
+  .hero-lead {
+    max-width: 620px;
+    color: rgba(240,232,216,0.65);
+    font-size: 18px;
+    line-height: 1.85;
+    margin: 24px 0 48px;
+    font-weight: 400;
+  }
+
+  .hero-stats { display: flex; flex-wrap: wrap; gap: 2px; }
+  .hstat {
+    background: rgba(255,58,26,0.06);
+    border: 1px solid rgba(255,58,26,0.25);
+    padding: 14px 22px;
+    font-family: var(--font-m);
+  }
+  .hstat .n { display: block; font-size: 26px; color: var(--red); line-height: 1.1; margin-bottom: 2px; font-weight: 500; text-shadow: var(--glow-red); }
+  .hstat .l { font-size: 9px; color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase; }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,8,5,0.96);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    box-shadow: 0 1px 0 rgba(255,58,26,0.08);
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-brand { font-family: var(--font-d); font-size: 12px; color: var(--red); letter-spacing: 0.08em; padding-right: 18px; border-right: 1px solid var(--border); margin-right: 4px; white-space: nowrap; }
+  .nav-a { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 17px 14px; text-decoration: none; white-space: nowrap; transition: color 0.2s; }
+  .nav-a:hover, .nav-a.active { color: var(--amber); }
+
+  /* ── LAYOUT ── */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 1; }
+  section { padding: 96px 0; border-bottom: 1px solid var(--border); position: relative; z-index: 1; }
+
+  .sec-label {
+    font-family: var(--font-m); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .sec-label::before { content: '>_'; opacity: 0.5; }
+  .sec-label::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--amber); opacity: 0.25; }
+
+  .sec-title {
+    font-family: var(--font-d); font-size: clamp(26px, 4vw, 46px); font-weight: 700;
+    letter-spacing: 0.02em; line-height: 1.1; margin-bottom: 44px; color: var(--white);
+  }
+  .sec-title .r { color: var(--red); } .sec-title .a { color: var(--amber); }
+  .sec-title .g { color: var(--green); } .sec-title .c { color: var(--cyan); }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); padding: 28px 32px;
+    position: relative; overflow: hidden; transition: border-color 0.3s;
+  }
+  .panel:hover { border-color: var(--border-glow); }
+  .panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .panel.pr::before { background: linear-gradient(90deg, var(--red), transparent); }
+  .panel.pa::before { background: linear-gradient(90deg, var(--amber), transparent); }
+  .panel.pg::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .panel.pc::before { background: linear-gradient(90deg, var(--cyan), transparent); }
+  .panel.pp::before { background: linear-gradient(90deg, var(--purple), transparent); }
+  .ptitle { font-family: var(--font-d); font-size: 13px; letter-spacing: 0.06em; margin-bottom: 14px; }
+  .ptitle.r{color:var(--red)} .ptitle.a{color:var(--amber)} .ptitle.g{color:var(--green)} .ptitle.c{color:var(--cyan)} .ptitle.p{color:var(--purple)}
+
+  /* ── TERMINAL ── */
+  .term { background: #040402; border: 1px solid var(--border); font-family: var(--font-m); font-size: 13px; overflow: hidden; }
+  .term-h { background: var(--surface); border-bottom: 1px solid var(--border); padding: 9px 14px; display: flex; align-items: center; gap: 7px; }
+  .td{width:10px;height:10px;border-radius:50%;} .td1{background:#ff5f57} .td2{background:#ffbd2e} .td3{background:#28c940}
+  .term-t { flex: 1; text-align: center; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
+  .term-b { padding: 18px 22px; line-height: 2; }
+  .tc{color:var(--muted)} .tr{color:var(--red)} .ta{color:var(--amber)} .tg{color:var(--green)} .tw{color:var(--white)} .tc2{color:var(--cyan)} .tp{color:var(--purple)}
+
+  /* ── JOURNEY STEPS ── */
+  .journey { position: relative; }
+  .j-line { position: absolute; left: 34px; top: 68px; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--red), rgba(255,58,26,0.2), transparent); }
+  .j-step { display: grid; grid-template-columns: 68px 1fr; gap: 20px; margin-bottom: 8px; opacity: 0; transform: translateX(-14px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .j-step.vis { opacity: 1; transform: translateX(0); }
+  .j-node { width: 68px; height: 68px; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; z-index: 2; background: var(--bg); flex-shrink: 0; clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+  .jn-r{border-color:var(--red);box-shadow:var(--glow-red)}
+  .jn-a{border-color:var(--amber);box-shadow:var(--glow-amber)}
+  .jn-g{border-color:var(--green);box-shadow:var(--glow-green)}
+  .jn-c{border-color:var(--cyan);box-shadow:0 0 18px rgba(0,229,212,0.35)}
+  .jn-p{border-color:var(--purple);box-shadow:0 0 18px rgba(192,96,255,0.35)}
+  .j-card { background: var(--panel); border: 1px solid var(--border); padding: 24px 28px; margin-bottom: 40px; transition: border-color 0.3s; }
+  .j-card:hover { border-color: var(--border-glow); }
+  .jl-r{border-left:3px solid var(--red)} .jl-a{border-left:3px solid var(--amber)} .jl-g{border-left:3px solid var(--green)} .jl-c{border-left:3px solid var(--cyan)} .jl-p{border-left:3px solid var(--purple)}
+  .j-phase { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 5px; }
+  .jp-r{color:var(--red)} .jp-a{color:var(--amber)} .jp-g{color:var(--green)} .jp-c{color:var(--cyan)} .jp-p{color:var(--purple)}
+  .j-title { font-family: var(--font-d); font-size: 18px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 14px; color: var(--white); }
+  .j-body { color: rgba(240,232,216,0.75); font-size: 16px; line-height: 1.85; }
+
+  /* ── CALLOUT ── */
+  .box { display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; margin-top: 18px; border: 1px solid; }
+  .box.r{background:rgba(255,58,26,0.05);border-color:rgba(255,58,26,0.2)}
+  .box.a{background:rgba(255,184,0,0.05);border-color:rgba(255,184,0,0.2)}
+  .box.g{background:rgba(57,255,20,0.04);border-color:rgba(57,255,20,0.15)}
+  .box.c{background:rgba(0,229,212,0.04);border-color:rgba(0,229,212,0.15)}
+  .box.p{background:rgba(192,96,255,0.04);border-color:rgba(192,96,255,0.15)}
+  .box-i{font-size:20px;flex-shrink:0;margin-top:2px}
+  .box-t{font-size:14px;color:rgba(240,232,216,0.8);line-height:1.7}
+  .box-t strong{color:var(--white)}
+
+  /* ── QUOTE ── */
+  .quote { border-left: 3px solid var(--red); padding: 20px 28px; background: rgba(255,58,26,0.04); margin: 36px 0; font-style: italic; font-size: 17px; color: rgba(240,232,216,0.85); line-height: 1.8; }
+  .quote-src { margin-top: 10px; font-style: normal; font-family: var(--font-m); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
+
+  /* ── VULN TABLE ── */
+  .vtable { width: 100%; border-collapse: collapse; font-family: var(--font-m); font-size: 12px; }
+  .vtable th { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); padding: 11px 14px; border-bottom: 1px solid var(--border); text-align: left; background: var(--surface); }
+  .vtable td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+  .vtable tr:hover td { background: rgba(255,184,0,0.025); }
+
+  /* ── TECH GRID ── */
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px; }
+  .tech-card { background: var(--panel); border: 1px solid var(--border); padding: 24px; transition: all 0.3s; position: relative; overflow: hidden; }
+  .tech-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+  .tech-card:hover::after { transform: scaleX(1); }
+  .tech-card.tr::after{background:var(--red)} .tech-card.ta::after{background:var(--amber)} .tech-card.tg::after{background:var(--green)} .tech-card.tc::after{background:var(--cyan)}
+  .tech-card:hover { border-color: var(--border-glow); }
+  .tname { font-family: var(--font-d); font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .trole { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; }
+  .tdesc { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  .tbadge { display: inline-block; font-family: var(--font-m); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; margin-top: 10px; border: 1px solid; }
+  .tb-r{color:var(--red);border-color:rgba(255,58,26,0.4)} .tb-a{color:var(--amber);border-color:rgba(255,184,0,0.4)} .tb-g{color:var(--green);border-color:rgba(57,255,20,0.4)}
+
+  /* ── LESSONS GRID ── */
+  .lessons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2px; }
+  .lesson { background: var(--panel); border: 1px solid var(--border); padding: 28px; transition: border-color 0.3s; }
+  .lesson:hover { border-color: var(--amber); }
+  .lesson-n { font-family: var(--font-d); font-size: 52px; font-weight: 800; color: rgba(255,255,255,0.04); line-height: 1; margin-bottom: 10px; letter-spacing: -0.04em; }
+  .lesson-title { font-family: var(--font-d); font-size: 16px; font-weight: 700; margin-bottom: 10px; color: var(--amber); }
+  .lesson-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* ── TIMELINE TABLE ── */
+  .ttable { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .ttable th { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); padding: 11px 14px; border-bottom: 1px solid var(--border); text-align: left; background: var(--surface); }
+  .ttable td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+  .ttable tr:hover td { background: rgba(255,184,0,0.02); }
+  .tdate { font-family: var(--font-m); font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .tsev { display: inline-block; font-family: var(--font-m); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; border: 1px solid; }
+  .sev-r{color:var(--red);border-color:rgba(255,58,26,0.4);background:rgba(255,58,26,0.06)}
+  .sev-a{color:var(--amber);border-color:rgba(255,184,0,0.4);background:rgba(255,184,0,0.06)}
+  .sev-g{color:var(--green);border-color:rgba(57,255,20,0.3);background:rgba(57,255,20,0.04)}
+
+  /* ── IMPACT BARS ── */
+  .ibar-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .ibar-row { display: grid; grid-template-columns: 200px 1fr 60px; gap: 12px; align-items: center; }
+  .ibar-label { font-family: var(--font-m); font-size: 12px; color: var(--white); }
+  .ibar { height: 8px; background: var(--surface); position: relative; border: 1px solid var(--border); }
+  .ibar-fill { position: absolute; top: 0; left: 0; bottom: 0; transition: width 1.5s ease; }
+  .ibar-val { font-family: var(--font-m); font-size: 11px; text-align: right; }
+
+  /* ── FADE ── */
+  .fade-in { opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .fade-in.vis { opacity: 1; transform: translateY(0); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .blink { animation: blink 1s step-end infinite; }
+
+  /* ── FOOTER ── */
+  footer { padding: 56px 40px; text-align: center; font-family: var(--font-m); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; position: relative; z-index: 1; }
+  .footer-logo { font-family: var(--font-d); font-size: 20px; color: var(--red); letter-spacing: 0.15em; text-shadow: var(--glow-red); display: block; margin-bottom: 14px; }
+
+  @media(max-width:768px){
+    .hero{padding:60px 24px 60px}
+    .wrap{padding:0 24px}
+    section{padding:72px 0}
+    .j-step{grid-template-columns:56px 1fr;gap:14px}
+    .j-node{width:56px;height:56px;font-size:20px}
+    .rg2{grid-template-columns:1fr!important}
+    .ibar-row{grid-template-columns:1fr;gap:6px}
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<section class="hero" id="inicio">
+  <div class="hero-bg"></div>
+  <div class="hero-alert"></div>
+  <div class="hero-stamp">STUXNET<br>CLASSIFIED<br>CYBERWEAPON</div>
+  <div class="hero-c">
+    <div class="hero-eyebrow">Análisis Forense — Arma Cibernética — Infraestructura Crítica</div>
+    <h1>
+      <span class="l1">STUXNET</span>
+      <span class="l2">La Primera Arma Cibernética de la Historia</span>
+    </h1>
+    <p class="hero-lead">
+      En 2010 el mundo descubrió algo sin precedentes: un gusano de software tan sofisticado que destruyó físicamente mil centrífugas nucleares iraníes, cruzó una red "air-gapped", y <strong style="color:var(--white)">nunca disparó una sola bala</strong>. Esto es Stuxnet — analizado capa por capa.
+    </p>
+    <div class="hero-stats">
+      <div class="hstat"><span class="n">2005</span><span class="l">Inicio desarrollo</span></div>
+      <div class="hstat"><span class="n">4</span><span class="l">Zero-days usados</span></div>
+      <div class="hstat"><span class="n">~1,000</span><span class="l">Centrífugas destruidas</span></div>
+      <div class="hstat"><span class="n">200,000+</span><span class="l">PCs infectadas globalmente</span></div>
+      <div class="hstat"><span class="n">USA/Israel</span><span class="l">Atribución probable</span></div>
+      <div class="hstat"><span class="n">Mundo 1°</span><span class="l">Cyberweapon físico</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ NAV ════════════════════ -->
+<nav class="nav">
+  <div class="nav-brand">STUXNET://</div>
+  <a class="nav-a" href="#contexto">Contexto</a>
+  <a class="nav-a" href="#cronologia">Cronología</a>
+  <a class="nav-a" href="#anatomia">Anatomía</a>
+  <a class="nav-a" href="#ataque">El Ataque</a>
+  <a class="nav-a" href="#tecnologias">Tecnologías</a>
+  <a class="nav-a" href="#impacto">Impacto</a>
+  <a class="nav-a" href="#atribucion">Atribución</a>
+  <a class="nav-a" href="#lecciones">Lecciones</a>
+</nav>
+
+<!-- ════════════════════ CONTEXTO ════════════════════ -->
+<section id="contexto">
+  <div class="wrap">
+    <div class="sec-label">01 — Contexto Geopolítico</div>
+    <h2 class="sec-title">El Mundo Antes del <span class="r">Primer Cyberweapon</span></h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:40px;" class="rg2">
+      <div>
+        <p style="color:rgba(240,232,216,0.8);font-size:17px;line-height:1.85;margin-bottom:18px;">
+          A principios de los 2000, <strong style="color:var(--white)">Irán desarrollaba en secreto su programa nuclear</strong>. La planta de enriquecimiento de uranio en <strong style="color:var(--amber)">Natanz</strong>, en el desierto iraní, albergaba miles de centrífugas IR-1 capaces de producir uranio enriquecido — el mismo material que puede usarse en armas nucleares.
+        </p>
+        <p style="color:rgba(240,232,216,0.8);font-size:17px;line-height:1.85;margin-bottom:18px;">
+          La comunidad internacional presionaba con sanciones. EEUU e Israel exploraban opciones militares. Los ataques aéreos conllevaban riesgo de escalada regional. La diplomacia avanzaba lento. <strong style="color:var(--red)">Se necesitaba una tercera vía.</strong>
+        </p>
+        <p style="color:rgba(240,232,216,0.8);font-size:17px;line-height:1.85;">
+          La solución que concibieron fue sin precedentes: <strong style="color:var(--white)">un arma de software capaz de destruir maquinaria física sin dejar rastro visible</strong>. Una operación que se llamó internamente <strong style="color:var(--cyan)">"Olympic Games"</strong>.
+        </p>
+      </div>
+      <div>
+        <div class="panel pr">
+          <div class="ptitle r">🏭 NATANZ — El Objetivo</div>
+          <div style="font-family:var(--font-m);font-size:12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--red);">
+              <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">UBICACIÓN</div>
+              <div style="color:var(--white);">Natanz, Isfahan, Irán — Centro del desierto</div>
+            </div>
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+              <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">INFRAESTRUCTURA</div>
+              <div style="color:var(--white);">~9,000 centrífugas IR-1 operativas</div>
+            </div>
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+              <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">SEGURIDAD FÍSICA</div>
+              <div style="color:var(--white);">Instalaciones subterráneas, reforzadas, vigiladas</div>
+            </div>
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--green);">
+              <div style="color:var(--muted);font-size:10px;margin-bottom:2px;">SEGURIDAD DIGITAL — AIR GAP</div>
+              <div style="color:var(--green);">Red completamente aislada de internet</div>
+            </div>
+            <div style="padding:10px 14px;background:rgba(255,58,26,0.06);border:1px solid rgba(255,58,26,0.2);">
+              <div style="color:var(--red);font-size:10px;margin-bottom:2px;">SISTEMA DE CONTROL</div>
+              <div style="color:var(--white);">PLCs Siemens SIMATIC S7-315 y S7-417</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote" style="margin-top:24px;margin-bottom:0;">
+          "En malware technology, ha ocurrido algo que abrirá una nueva era. En malware, un nuevo tipo de supergusano ha evolucionado aprendiendo todas las estrategias de ataque más exitosas, y las usa para atacar objetivos muy específicos."
+          <div class="quote-src">— NATO CCDCOE, Stuxnet Facts Report, 2012</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ¿Qué es un Air Gap? -->
+    <div class="panel pa">
+      <div class="ptitle a">🔌 ¿QUÉ ES UN "AIR GAP"? — El Obstáculo a Vencer</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;" class="rg2">
+        <div>
+          <p style="font-size:15px;color:rgba(240,232,216,0.75);line-height:1.8;margin-bottom:12px;">
+            Un <strong style="color:var(--amber)">"air gap"</strong> es una medida de seguridad extrema: la red está físicamente desconectada de internet y de cualquier otra red externa. No hay cables, no hay WiFi, no hay conexión posible desde el exterior.
+          </p>
+          <p style="font-size:15px;color:rgba(240,232,216,0.75);line-height:1.8;">
+            Se pensaba que era infranqueable. Para atacar un sistema air-gapped, un atacante necesita <strong style="color:var(--white)">acceso físico</strong> al sistema. Los diseñadores de Stuxnet tenían exactamente eso en mente.
+          </p>
+        </div>
+        <div style="font-family:var(--font-m);font-size:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:12px;background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.2);text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">🌍 Internet</div>
+            <div style="color:var(--green);">Red Global</div>
+          </div>
+          <div style="text-align:center;color:var(--red);font-size:18px;letter-spacing:0.1em;">✗ CORTE FÍSICO ✗</div>
+          <div style="padding:12px;background:rgba(255,58,26,0.06);border:1px solid rgba(255,58,26,0.2);text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">🏭 Natanz</div>
+            <div style="color:var(--red);">Red Aislada (Air-Gapped)</div>
+          </div>
+          <div class="box a" style="margin-top:0;">
+            <div class="box-i">💡</div>
+            <div class="box-t"><strong>La solución de Stuxnet:</strong> Si la red no está conectada, el malware viaja en una memoria USB. El vector humano.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ CRONOLOGÍA ════════════════════ -->
+<section id="cronologia">
+  <div class="wrap">
+    <div class="sec-label">02 — Línea de Tiempo</div>
+    <h2 class="sec-title">Cronología del <span class="a">Incidente</span></h2>
+
+    <table class="ttable">
+      <thead><tr><th>Fecha</th><th>Evento</th><th>Severidad</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="tdate">~2005</td>
+          <td>
+            <strong style="color:var(--white);">Inicio de Operación Olympic Games</strong><br>
+            <span style="color:var(--muted);font-size:13px;">EEUU bajo la presidencia de Bush inicia el desarrollo de Stuxnet. El objetivo: sabotear el programa nuclear iraní sin recurrir a ataques militares convencionales.</span>
+          </td>
+          <td><span class="tsev sev-a">Clasificado</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Nov 2007</td>
+          <td>
+            <strong style="color:var(--white);">Primera versión de Stuxnet (v0.5)</strong><br>
+            <span style="color:var(--muted);font-size:13px;">La primera variante, Stuxnet 0.5, ataca válvulas de gas en reactores nucleares. Menos agresiva y más dirigida que las versiones posteriores.</span>
+          </td>
+          <td><span class="tsev sev-a">Alto</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">2008</td>
+          <td>
+            <strong style="color:var(--white);">Infiltración en Natanz via contratista</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Un ingeniero holandés (Erik van Sabben), que trabajaba para una empresa proveedora de equipos a Irán, lleva una memoria USB infectada al interior de Natanz.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Jun 2009</td>
+          <td>
+            <strong style="color:var(--white);">Primera destrucción masiva de centrífugas</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Las centrífugas en Natanz empiezan a fallar de forma inusual. El número de centrífugas operativas cae de ~4,700 a ~3,900. Los científicos iraníes no entienden la causa. Varios son despedidos por "incompetencia".</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Jun 17, 2010</td>
+          <td>
+            <strong style="color:var(--white);">Descubrimiento por VirusBlokAda</strong><br>
+            <span style="color:var(--muted);font-size:13px;">La empresa bielorrusa de seguridad VirusBlokAda detecta archivos maliciosos en sistemas de un cliente iraní que sufría reinicios inexplicables. Sergey Ulasen lo identifica como malware avanzado.</span>
+          </td>
+          <td><span class="tsev sev-a">Alto</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Jul 15, 2010</td>
+          <td>
+            <strong style="color:var(--white);">Divulgación pública masiva</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Un ataque DDoS interrumpe una lista de correo de seguridad industrial. Stuxnet se hace conocido públicamente. Symantec, Kaspersky y otras firmas comienzan análisis exhaustivos.</span>
+          </td>
+          <td><span class="tsev sev-a">Alto</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Sep 2010</td>
+          <td>
+            <strong style="color:var(--white);">Stuxnet se identifica como cyberweapon</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Liam O'Murchu de Symantec publica análisis completo. Se revela que el objetivo era específicamente las centrífugas de Natanz y los PLCs Siemens S7-315/417. El mundo comprende: es un arma de guerra cibernética.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Nov 29, 2010</td>
+          <td>
+            <strong style="color:var(--white);">Irán admite el ataque</strong><br>
+            <span style="color:var(--muted);font-size:13px;">El presidente Ahmadinejad confirma en rueda de prensa: "lograron crear problemas para un número limitado de nuestras centrífugas con el software que instalaron en partes electrónicas."</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">2012</td>
+          <td>
+            <strong style="color:var(--white);">Stuxnet se auto-termina + escapa a Occidente</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Stuxnet tenía programada su auto-destrucción para junio 2012. Sin embargo, un error de código lo hizo propagarse fuera de Irán. Chevron USA reconoce haber sido infectado. El New York Times revela la operación Olympic Games.</span>
+          </td>
+          <td><span class="tsev sev-g">Exposición</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════════════ ANATOMÍA ════════════════════ -->
+<section id="anatomia">
+  <div class="wrap">
+    <div class="sec-label">03 — Análisis Técnico</div>
+    <h2 class="sec-title">Anatomía del <span class="r">Gusano</span></h2>
+
+    <p style="color:rgba(240,232,216,0.7);max-width:700px;margin-bottom:44px;font-size:17px;line-height:1.85;">
+      Stuxnet no era malware ordinario. Era una obra de ingeniería de software de nivel estatal: más de <strong style="color:var(--white)">500,000 líneas de código</strong>, escrito en múltiples lenguajes (C, C++, otros), con tres componentes principales y siete métodos de propagación diferentes.
+    </p>
+
+    <!-- Tres componentes -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:32px;" class="rg2-3">
+      <div class="panel pr">
+        <div class="ptitle r">🐛 COMPONENTE 1: El Gusano Principal</div>
+        <p style="font-size:14px;color:rgba(240,232,216,0.7);line-height:1.7;margin-bottom:12px;">El DLL principal (~WTR4132.TMP). Contiene toda la lógica de propagación. Tamaño: ~0.5 MB comprimido, ~1.2 MB expandido. Se propaga por red y USB.</p>
+        <div style="font-family:var(--font-m);font-size:11px;color:var(--muted);">mrxnet.sys · mrxcls.sys</div>
+      </div>
+      <div class="panel pa">
+        <div class="ptitle a">🔗 COMPONENTE 2: Archivo LNK</div>
+        <p style="font-size:14px;color:rgba(240,232,216,0.7);line-height:1.7;margin-bottom:12px;">Un archivo de acceso directo Windows (.LNK) especialmente diseñado. Solo con que Windows Explorer mostrara el ícono, el malware se ejecutaba. <strong style="color:var(--amber)">Sin ninguna interacción del usuario.</strong></p>
+        <div style="font-family:var(--font-m);font-size:11px;color:var(--muted);">CVE-2010-2568</div>
+      </div>
+      <div class="panel pc">
+        <div class="ptitle c">🥷 COMPONENTE 3: Rootkit</div>
+        <p style="font-size:14px;color:rgba(240,232,216,0.7);line-height:1.7;margin-bottom:12px;">Dos drivers de kernel (mrxnet.sys, mrxcls.sys) firmados con certificados robados de Realtek y JMicron. Ocultaban todos los archivos del gusano y sus actividades al antivirus.</p>
+        <div style="font-family:var(--font-m);font-size:11px;color:var(--muted);">Realtek cert · JMicron cert</div>
+      </div>
+    </div>
+
+    <!-- Los 4 zero-days -->
+    <div class="panel pa" style="margin-bottom:32px;">
+      <div class="ptitle a">⚡ LOS 4 ZERO-DAYS — Un Récord Sin Precedentes</div>
+      <p style="font-size:15px;color:rgba(240,232,216,0.75);line-height:1.8;margin-bottom:20px;">
+        Usar <strong style="color:var(--white)">cuatro vulnerabilidades zero-day en un solo malware era inédito en 2010</strong> y sigue siendo extremadamente raro hoy. Un zero-day es una vulnerabilidad desconocida para el fabricante del software — nadie puede defenderse de algo que no sabe que existe. Cada uno de estos vale cientos de miles de dólares en el mercado negro.
+      </p>
+      <table class="vtable">
+        <thead>
+          <tr><th>CVE</th><th>Vulnerabilidad</th><th>Cómo se usaba</th><th>Impacto</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--red);font-weight:600;">CVE-2010-2568</td>
+            <td style="color:var(--white);">Windows LNK Shortcut</td>
+            <td style="color:var(--muted);">Ejecuta código al mostrar el ícono en Explorer. <strong style="color:var(--amber)">0 clics necesarios.</strong></td>
+            <td><span class="tsev sev-r">Propagación USB</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--red);font-weight:600;">CVE-2010-2772</td>
+            <td style="color:var(--white);">Siemens WinCC SCADA</td>
+            <td style="color:var(--muted);">Credenciales hardcodeadas (WinCCConnect / 2WSXcder) en BD de Siemens. Acceso directo a PLCs.</td>
+            <td><span class="tsev sev-r">Acceso PLC</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--amber);">CVE-2010-2729</td>
+            <td style="color:var(--white);">Print Spooler RCE</td>
+            <td style="color:var(--muted);">Ejecución remota de código via impresoras compartidas en red. Propagación LAN sin interacción.</td>
+            <td><span class="tsev sev-r">Propagación LAN</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--amber);">CVE-2010-2743</td>
+            <td style="color:var(--white);">Win32k Keyboard Layout</td>
+            <td style="color:var(--muted);">Escalada de privilegios a nivel kernel. Permitía instalar el rootkit con máximos permisos.</td>
+            <td><span class="tsev sev-r">Escalada privs</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);">CVE-2008-4250</td>
+            <td style="color:var(--white);">MS08-067 (Conficker)</td>
+            <td style="color:var(--muted);">Vulnerabilidad ya conocida de Windows Server Service. Re-usada para propagación por red.</td>
+            <td><span class="tsev sev-a">Propagación red</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 7 métodos de propagación -->
+    <div class="panel pp">
+      <div class="ptitle p">🔀 7 MÉTODOS DE PROPAGACIÓN</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;" class="rg2">
+        <div style="display:flex;flex-direction:column;gap:8px;font-family:var(--font-m);font-size:12px;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">1.</span> USB via LNK exploit (zero-day)
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">2.</span> Impresoras compartidas (Print Spooler)
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">3.</span> MS08-067 (vulnerabilidad Conficker)
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">4.</span> Proyectos Siemens STEP 7 (.S7P files)
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-family:var(--font-m);font-size:12px;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">5.</span> Carpetas compartidas de red (WinCC DB)
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">6.</span> Comunicación P2P entre instancias Stuxnet
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--purple);">
+            <span style="color:var(--purple);">7.</span> Auto-actualización desde servidores C&C (internet)
+          </div>
+        </div>
+      </div>
+      <div class="box p" style="margin-top:16px;">
+        <div class="box-i">🎯</div>
+        <div class="box-t"><strong>Mecanismo de auto-contención:</strong> Stuxnet limitaba su propagación a un máximo de 3 infecciones por instancia USB. Esto reducía la exposición — aunque un error de código posterior lo hizo escapar más allá de Irán.</div>
+      </div>
+    </div>
+
+    <!-- Certificados robados -->
+    <div class="panel pr" style="margin-top:24px;">
+      <div class="ptitle r">📜 CERTIFICADOS DIGITALES ROBADOS — Disfraz de Software Legítimo</div>
+      <p style="font-size:15px;color:rgba(240,232,216,0.75);line-height:1.8;margin-bottom:16px;">
+        Para instalar sus drivers de kernel sin levantar sospechas, Stuxnet usó <strong style="color:var(--red)">certificados digitales robados de dos empresas de hardware taiwanesas</strong>: Realtek Semiconductor y JMicron Technology. Ambas compartían el mismo parque industrial en Hsinchu, Taiwán — lo que sugiere que el robo fue orquestado físicamente.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" class="rg2">
+        <div style="padding:16px;background:rgba(255,58,26,0.06);border:1px solid rgba(255,58,26,0.2);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--red);margin-bottom:6px;">Realtek Semiconductor</div>
+          <div style="font-family:var(--font-m);font-size:12px;color:var(--muted);">mrxcls.sys — driver ocultador<br>Revocado el 16 julio 2010</div>
+        </div>
+        <div style="padding:16px;background:rgba(255,58,26,0.06);border:1px solid rgba(255,58,26,0.2);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--red);margin-bottom:6px;">JMicron Technology</div>
+          <div style="font-family:var(--font-m);font-size:12px;color:var(--muted);">mrxnet.sys — driver rootkit<br>Revocado al descubrirse</div>
+        </div>
+      </div>
+      <div class="box r" style="margin-top:12px;">
+        <div class="box-i">🔑</div>
+        <div class="box-t">Windows mostraba estos drivers como "software confiable" firmado por empresas legítimas. El sistema operativo no levantaba ninguna alerta. Esta era la brillantez —y la peligrosidad— de Stuxnet.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ EL ATAQUE PASO A PASO ════════════════════ -->
+<section id="ataque">
+  <div class="wrap">
+    <div class="sec-label">04 — El Ataque</div>
+    <h2 class="sec-title">El Ataque <span class="r">Paso a Paso</span></h2>
+
+    <p style="color:rgba(240,232,216,0.7);max-width:700px;margin-bottom:60px;font-size:17px;line-height:1.85;">
+      Stuxnet ejecutó un plan en múltiples fases, diseñado para ser invisible hasta que el daño fuera irreversible. Cada fase tenía una lógica precisa. El objetivo final: hacer que las centrífugas se destruyeran solas mientras todos los monitores mostraban normalidad.
+    </p>
+
+    <div class="journey">
+      <div class="j-line"></div>
+
+      <!-- FASE 1 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-r">🎯</div></div>
+        <div class="j-card jl-r">
+          <div class="j-phase jp-r">Fase 1 — Infiltración</div>
+          <div class="j-title">Cruzar el Air Gap — El Vector Humano</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Natanz estaba completamente desconectada de internet. Para entrar, Stuxnet necesitaba un vector humano. La operación identificó a <strong style="color:var(--white)">contratistas y empresas proveedoras</strong> que tenían acceso físico a las instalaciones.</p>
+            <p style="margin-bottom:14px;">Se infectaron inicialmente <strong style="color:var(--amber)">cuatro empresas de ingeniería</strong> relacionadas con Natanz. Un ingeniero holandés que trabajaba como agente de inteligencia neerlandés (Erik van Sabben, según investigaciones posteriores del periódico De Volkskrant), llevó una memoria USB infectada al interior de Natanz en 2008.</p>
+            <p>Una vez dentro, el LNK zero-day hizo el resto: <strong style="color:var(--red)">solo con conectar la USB y que Windows Explorer mostrara los archivos, la infección comenzaba automáticamente</strong>. Sin necesidad de que nadie ejecutara nada.</p>
+          </div>
+          <div class="box r">
+            <div class="box-i">🧠</div>
+            <div class="box-t"><strong>El vector humano es siempre el más difícil de defender.</strong> Natanz tenía seguridad digital perfecta — pero no podía aislar a sus propios empleados y contratistas del mundo exterior.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 2 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-a">🔍</div></div>
+        <div class="j-card jl-a">
+          <div class="j-phase jp-a">Fase 2 — Reconocimiento y Propagación Interna</div>
+          <div class="j-title">Buscar el Objetivo Dentro de la Red</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Una vez dentro de la red interna, Stuxnet se propagaba usando sus múltiples métodos (red local, impresoras compartidas, proyectos STEP 7). Infectaba cualquier PC Windows que encontrara — pero con una misión muy específica.</p>
+            <p style="margin-bottom:14px;">En cada sistema infectado, Stuxnet buscaba indicadores específicos:</p>
+            <div class="term" style="font-size:12px;margin:12px 0;">
+              <div class="term-h"><div class="td td1"></div><div class="td td2"></div><div class="td td3"></div><div class="term-t">Stuxnet — lógica de reconocimiento</div></div>
+              <div class="term-b" style="padding:12px 16px;line-height:1.9;">
+                <div><span class="tc"># Paso 1: ¿Hay software Siemens STEP 7 instalado?</span></div>
+                <div><span class="ta">if</span> <span class="tw">simatic_step7_installed()</span>: <span class="tc">→ continuar</span></div>
+                <div><span class="ta">else</span>: <span class="tc">→ solo propagar, no atacar</span></div>
+                <div>&nbsp;</div>
+                <div><span class="tc"># Paso 2: Acceder al PLC via credenciales hardcodeadas</span></div>
+                <div><span class="tg">WinCC_user</span> = <span class="tr">"WinCCConnect"</span></div>
+                <div><span class="tg">WinCC_pass</span> = <span class="tr">"2WSXcder"</span> <span class="tc">← contraseña de fábrica de Siemens</span></div>
+                <div>&nbsp;</div>
+                <div><span class="tc"># Paso 3: Verificar modelo exacto del PLC</span></div>
+                <div><span class="ta">if</span> <span class="tw">PLC_cpu</span> == <span class="tr">"6ES7-315-2"</span> <span class="ta">or</span> <span class="tr">"6ES7-417"</span>:</div>
+                <div>  <span class="tc"># Paso 4: Verificar frecuencias de los drives</span></div>
+                <div>  <span class="ta">if</span> <span class="tw">drives</span> == <span class="tr">Vacon</span> <span class="ta">or</span> <span class="tr">Fararo_Paya</span> <span class="ta">and</span> Hz &gt; 807:</div>
+                <div>    <span class="tg">ACTIVAR PAYLOAD ← ¡ES NATANZ!</span></div>
+              </div>
+            </div>
+            <p>Stuxnet verificaba el modelo exacto de CPU del PLC, el tipo de variadores de frecuencia conectados, y el rango de frecuencias operativas. <strong style="color:var(--amber)">Solo si todo coincidía exactamente, activaba su payload destructivo.</strong> Era quirúrgicamente preciso.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 3 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-a">⚙️</div></div>
+        <div class="j-card jl-a">
+          <div class="j-phase jp-a">Fase 3 — Comprensión del Entorno</div>
+          <div class="j-title">¿Cómo Sabía que Estaba en Natanz?</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Los PLCs Siemens S7-315 controlaban los <strong style="color:var(--amber)">variadores de frecuencia</strong> (VFDs) que regulaban la velocidad de rotación de las centrífugas. Stuxnet buscaba específicamente dos fabricantes de VFDs:</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;font-family:var(--font-m);font-size:12px;" class="rg2">
+              <div style="padding:12px;background:rgba(255,184,0,0.06);border:1px solid rgba(255,184,0,0.2);">
+                <div style="color:var(--amber);font-weight:600;margin-bottom:4px;">Vacon (Finlandia)</div>
+                <div style="color:var(--muted);">Fabricante de variadores de frecuencia de alta precisión usados en las centrífugas</div>
+              </div>
+              <div style="padding:12px;background:rgba(255,184,0,0.06);border:1px solid rgba(255,184,0,0.2);">
+                <div style="color:var(--amber);font-weight:600;margin-bottom:4px;">Fararo Paya (Irán)</div>
+                <div style="color:var(--muted);">Fabricante iraní de drives — su presencia confirmaba que el sistema era iraní</div>
+              </div>
+            </div>
+            <p>Adicionalmente, el presidente de Irán publicó fotos de visita a Natanz en su sitio web oficial. Un análisis de estas fotos reveló los modelos exactos de equipos usados — información que los diseñadores de Stuxnet usaron para calibrar el ataque.</p>
+          </div>
+          <div class="box a">
+            <div class="box-i">📸</div>
+            <div class="box-t">Las fotos del presidente iraní en Natanz, publicadas en su sitio web oficial, revelaron involuntariamente detalles técnicos del equipamiento. Los diseñadores de Stuxnet usaron esas imágenes para afinar el payload.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 4 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-r">💣</div></div>
+        <div class="j-card jl-r">
+          <div class="j-phase jp-r">Fase 4 — El Payload Destructivo</div>
+          <div class="j-title">Sabotear las Centrífugas Sin Que Nadie Lo Note</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Aquí estaba la verdadera brillantez de Stuxnet. Una vez identificado el sistema correcto, ejecutaba un ciclo de sabotaje en dos partes simultáneas:</p>
+
+            <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
+              <div style="padding:16px 20px;background:rgba(255,58,26,0.06);border:1px solid rgba(255,58,26,0.2);border-left:3px solid var(--red);">
+                <div style="font-family:var(--font-d);font-size:14px;color:var(--red);margin-bottom:8px;">PARTE A — Sabotaje Físico (Real)</div>
+                <p style="font-size:14px;color:rgba(240,232,216,0.75);line-height:1.75;">
+                  Stuxnet enviaba comandos al PLC para variar la velocidad de rotación de las centrífugas en ciclos destructivos:<br>
+                  <span style="font-family:var(--font-m);color:var(--amber);">807 Hz → 1,410 Hz → 2 Hz → 1,064 Hz → repetir</span><br>
+                  Velocidad normal: ~1,000 Hz. La velocidad de 1,410 Hz es el punto máximo de degradación — centrifugando a esa velocidad, el rotor se fracturaba por estrés mecánico. Luego caía a 2 Hz — casi detención total. Este ciclo de aceleración/desaceleración extrema destruía los rodamientos, las conexiones y los rotores de carbono de las centrífugas.
+                </p>
+              </div>
+
+              <div style="padding:16px 20px;background:rgba(57,255,20,0.04);border:1px solid rgba(57,255,20,0.15);border-left:3px solid var(--green);">
+                <div style="font-family:var(--font-d);font-size:14px;color:var(--green);margin-bottom:8px;">PARTE B — Falsificación de Datos (Invisible)</div>
+                <p style="font-size:14px;color:rgba(240,232,216,0.75);line-height:1.75;">
+                  Simultáneamente, Stuxnet <strong style="color:var(--white)">interceptaba las señales de los sensores</strong> y enviaba al SCADA (pantallas de monitoreo) grabaciones de los 30 segundos anteriores. Los operadores veían en sus pantallas que todo estaba perfectamente normal: frecuencias estables, temperaturas correctas, presiones normales.<br><br>
+                  <strong style="color:var(--green)">Mientras las centrífugas se destruían, las pantallas mostraban "TODO OK".</strong>
+                </p>
+              </div>
+            </div>
+
+            <p style="margin-top:8px;">Stuxnet esperaba entre 27 días entre cada ciclo de ataque. Esto era deliberado: si los fallos ocurrieran de repente, levantarían sospechas inmediatas. Con 27 días de espera, los problemas parecían desgaste aleatorio y normal de las máquinas.</p>
+          </div>
+
+          <div class="box r">
+            <div class="box-i">🎭</div>
+            <div class="box-t"><strong>La doble deception:</strong> Destrucción física + datos falsos. Los científicos iraníes no podían diagnosticar el problema porque sus instrumentos de diagnóstico estaban mintiendo. Varios fueron despedidos por "incompetencia" cuando en realidad eran víctimas de un arma.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 5 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-g">📡</div></div>
+        <div class="j-card jl-g">
+          <div class="j-phase jp-g">Fase 5 — Persistencia y Exfiltración</div>
+          <div class="j-title">Mantenerse Invisible y Actualizarse</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Para los sistemas que sí tenían conexión a internet (los infectados fuera del air gap), Stuxnet incluía capacidad de auto-actualización. Se comunicaba con dos servidores C&C (Command & Control):</p>
+            <div style="font-family:var(--font-m);font-size:12px;display:flex;flex-direction:column;gap:6px;margin:12px 0;">
+              <div style="padding:8px 12px;background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.15);">
+                <span style="color:var(--green);">www.mypremierfutbol.com</span> <span style="color:var(--muted);">— Servidor C&C primario</span>
+              </div>
+              <div style="padding:8px 12px;background:rgba(57,255,20,0.05);border:1px solid rgba(57,255,20,0.15);">
+                <span style="color:var(--green);">www.todaysfutbol.com</span> <span style="color:var(--muted);">— Servidor C&C secundario</span>
+              </div>
+            </div>
+            <p>Stuxnet también tenía <strong style="color:var(--amber)">comunicación P2P entre instancias</strong>: dos ordenadores infectados en la misma red podían actualizarse mutuamente, sin necesidad de internet. Esto era vital para actualizar los nodos dentro del air gap de Natanz.</p>
+            <p style="margin-top:12px;">El rootkit ocultaba todos sus archivos del sistema de archivos. Un usuario mirando la carpeta de Windows no veía nada anormal. El antivirus tampoco — porque los drivers maliciosos operaban a nivel de kernel, por debajo del antivirus.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 6 -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-c">🕵️</div></div>
+        <div class="j-card jl-c">
+          <div class="j-phase jp-c">Fase 6 — Descubrimiento Accidental</div>
+          <div class="j-title">Cómo lo Encontraron — El Error que lo Delató</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Stuxnet fue diseñado para permanecer oculto hasta su auto-destrucción en junio de 2012. Pero <strong style="color:var(--red)">un error de programación rompió la contención</strong>: Stuxnet comenzó a propagarse agresivamente más allá de las cuatro empresas objetivo.</p>
+            <p style="margin-bottom:14px;">El 17 de junio de 2010, un empleado de la empresa bielorrusa VirusBlokAda investigaba reinicios inexplicables en equipos de un cliente en Irán. Encontró archivos sospechosos y alertó a la comunidad de seguridad.</p>
+            <p>Para cuando Symantec, Kaspersky y otras firmas comenzaron a analizarlo, Stuxnet había infectado más de 200,000 equipos en 155 países — con el 60% de las infecciones en Irán.</p>
+          </div>
+          <div class="box c">
+            <div class="box-i">🔬</div>
+            <div class="box-t">Cuando Symantec publicó su análisis en septiembre de 2010, los analistas que ya observaban la tasa anormal de fallas de centrífugas en Natanz (reportes IAEA) comprendieron todo. Era un arma. La primera arma cibernética que había causado destrucción física real.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end journey -->
+  </div>
+</section>
+
+<!-- ════════════════════ TECNOLOGÍAS ════════════════════ -->
+<section id="tecnologias">
+  <div class="wrap">
+    <div class="sec-label">05 — Sistemas Involucrados</div>
+    <h2 class="sec-title">Tecnologías <span class="a">Comprometidas</span></h2>
+
+    <div class="tech-grid">
+
+      <div class="tech-card tr">
+        <div style="font-size:28px;margin-bottom:14px;">🔌</div>
+        <div class="tname" style="color:var(--red);">Siemens STEP 7</div>
+        <div class="trole" style="color:var(--red);">Software ICS — Vector de Ataque</div>
+        <div class="tdesc">Entorno de programación para PLCs Siemens. Stuxnet lo buscaba activamente. Si estaba presente, el worm modificaba los proyectos .S7P para propagarse a otros sistemas.</div>
+        <span class="tbadge tb-r">Target primario</span>
+      </div>
+
+      <div class="tech-card tr">
+        <div style="font-size:28px;margin-bottom:14px;">🖥️</div>
+        <div class="tname" style="color:var(--red);">PLC Siemens S7-315/417</div>
+        <div class="trole" style="color:var(--red);">Controlador Industrial — Objetivo Final</div>
+        <div class="tdesc">Controladores lógicos programables que manejaban los variadores de frecuencia de las centrífugas. Stuxnet los reprogramaba directamente, inyectando código malicioso en su firmware.</div>
+        <span class="tbadge tb-r">Reprogramado</span>
+      </div>
+
+      <div class="tech-card ta">
+        <div style="font-size:28px;margin-bottom:14px;">📊</div>
+        <div class="tname" style="color:var(--amber);">Siemens WinCC SCADA</div>
+        <div class="trole" style="color:var(--amber);">Sistema de Monitoreo — Engañado</div>
+        <div class="tdesc">Sistema SCADA de visualización que mostraba el estado de las centrífugas a los operadores. Stuxnet interceptaba sus datos y enviaba grabaciones históricas de 30 segundos para falsificar normalidad.</div>
+        <span class="tbadge tb-a">Datos falsificados</span>
+      </div>
+
+      <div class="tech-card ta">
+        <div style="font-size:28px;margin-bottom:14px;">⚡</div>
+        <div class="tname" style="color:var(--amber);">VFDs — Variadores de Frecuencia</div>
+        <div class="trole" style="color:var(--amber);">Vacon & Fararo Paya</div>
+        <div class="tdesc">Controlaban la velocidad de rotación de las centrífugas. Stuxnet los hacía variar entre 807 Hz, 1,410 Hz y 2 Hz — un ciclo destructivo que fracturaba los rotores por estrés mecánico.</div>
+        <span class="tbadge tb-a">Frecuencias saboteadas</span>
+      </div>
+
+      <div class="tech-card tg">
+        <div style="font-size:28px;margin-bottom:14px;">💽</div>
+        <div class="tname" style="color:var(--green);">Windows XP/Vista/7</div>
+        <div class="trole" style="color:var(--green);">Sistema Operativo — Infectado</div>
+        <div class="tdesc">Stuxnet afectaba todas las versiones de 32 bits de Windows desde Windows 2000 hasta Windows 7. Los PCs Windows eran la "puerta de entrada natural" hacia los PLCs industriales.</div>
+        <span class="tbadge tb-g">Gateway hacia PLCs</span>
+      </div>
+
+      <div class="tech-card tg">
+        <div style="font-size:28px;margin-bottom:14px;">🔑</div>
+        <div class="tname" style="color:var(--green);">Certificados Realtek/JMicron</div>
+        <div class="trole" style="color:var(--green);">Firma Digital — Robada</div>
+        <div class="tdesc">Certificados digitales válidos robados de dos empresas taiwanesas. Permitían que los drivers del rootkit (mrxnet.sys, mrxcls.sys) se instalaran como "software confiable" sin alertas de Windows.</div>
+        <span class="tbadge tb-g">Camuflaje digital</span>
+      </div>
+
+      <div class="tech-card" style="border-color:var(--border);">
+        <div style="font-size:28px;margin-bottom:14px;">🏭</div>
+        <div class="tname" style="color:var(--cyan);">IR-1 Centrífugas</div>
+        <div class="trole" style="color:var(--cyan);">Infraestructura Física — Destruida</div>
+        <div class="tdesc">Centrífugas de enriquecimiento de uranio basadas en el diseño A.Q. Khan. Operan a ~1,000 Hz. Stuxnet las llevaba a 1,410 Hz (máximo destructivo) causando fractura de rotores de carbono.</div>
+        <span class="tbadge" style="color:var(--cyan);border-color:rgba(0,229,212,0.4);">~1,000 destruidas</span>
+      </div>
+
+      <div class="tech-card" style="border-color:var(--border);">
+        <div style="font-size:28px;margin-bottom:14px;">💾</div>
+        <div class="tname" style="color:var(--purple);">USB Memory Sticks</div>
+        <div class="trole" style="color:var(--purple);">Vector Físico — Air Gap Bridge</div>
+        <div class="tdesc">La única forma de cruzar el air gap de Natanz. Memorias USB infectadas llevadas por contratistas y empleados al interior de la planta. El LNK zero-day aseguraba infección automática al conectarlas.</div>
+        <span class="tbadge" style="color:var(--purple);border-color:rgba(192,96,255,0.4);">Air gap bypass</span>
+      </div>
+
+    </div>
+
+    <!-- ICS/SCADA Architecture -->
+    <div class="panel pa" style="margin-top:32px;">
+      <div class="ptitle a">🏗️ ARQUITECTURA ICS/SCADA — Cómo Se Conectan los Sistemas</div>
+      <div style="font-family:var(--font-m);font-size:12px;margin-top:16px;">
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:center;">
+          <div style="padding:14px 32px;background:rgba(57,255,20,0.06);border:1px solid rgba(57,255,20,0.2);text-align:center;width:100%;max-width:500px;">
+            <div style="color:var(--green);">💻 PG/HMI — Workstation del Operador</div>
+            <div style="color:var(--muted);font-size:10px;margin-top:3px;">Windows XP + Siemens STEP 7 + WinCC · STUXNET SE INSTALA AQUÍ</div>
+          </div>
+          <div style="color:var(--muted);text-align:center;">↕ Profibus / Ethernet industrial</div>
+          <div style="padding:14px 32px;background:rgba(255,58,26,0.06);border:2px solid rgba(255,58,26,0.3);text-align:center;width:100%;max-width:500px;">
+            <div style="color:var(--red);">⚙️ PLC — Siemens S7-315/417</div>
+            <div style="color:var(--muted);font-size:10px;margin-top:3px;">Controlador Lógico Programable · STUXNET INYECTA CÓDIGO AQUÍ</div>
+          </div>
+          <div style="color:var(--muted);text-align:center;">↕ Señales eléctricas analógicas/digitales</div>
+          <div style="padding:14px 32px;background:rgba(255,184,0,0.06);border:1px solid rgba(255,184,0,0.2);text-align:center;width:100%;max-width:500px;">
+            <div style="color:var(--amber);">⚡ VFD — Variador de Frecuencia (Vacon/Fararo Paya)</div>
+            <div style="color:var(--muted);font-size:10px;margin-top:3px;">Controla RPM de motores eléctricos · OBJETIVO DE LA MANIPULACIÓN</div>
+          </div>
+          <div style="color:var(--muted);text-align:center;">↕ Motor eléctrico</div>
+          <div style="padding:14px 32px;background:rgba(192,96,255,0.06);border:1px solid rgba(192,96,255,0.2);text-align:center;width:100%;max-width:500px;">
+            <div style="color:var(--purple);">🌀 Centrífuga IR-1</div>
+            <div style="color:var(--muted);font-size:10px;margin-top:3px;">~1,000 Hz nominal · 1,410 Hz = DESTRUCCIÓN · OBJETIVO FINAL</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ IMPACTO ════════════════════ -->
+<section id="impacto">
+  <div class="wrap">
+    <div class="sec-label">06 — Consecuencias</div>
+    <h2 class="sec-title">Impacto <span class="r">Real</span> y Global</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:40px;" class="rg2">
+
+      <div>
+        <h3 style="font-family:var(--font-d);font-size:19px;font-weight:700;color:var(--amber);margin-bottom:20px;">Nivel de Compromiso</h3>
+        <div class="ibar-wrap">
+          <div class="ibar-row">
+            <div class="ibar-label">Centrífugas destruidas</div>
+            <div class="ibar"><div class="ibar-fill" style="width:20%;background:var(--red);"></div></div>
+            <div class="ibar-val" style="color:var(--red);">~1,000</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">PCs infectadas global</div>
+            <div class="ibar"><div class="ibar-fill" style="width:100%;background:var(--amber);"></div></div>
+            <div class="ibar-val" style="color:var(--amber);">200,000+</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Infecciones en Irán</div>
+            <div class="ibar"><div class="ibar-fill" style="width:60%;background:var(--red);"></div></div>
+            <div class="ibar-val" style="color:var(--red);">60%</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Capacidad enriquecimiento</div>
+            <div class="ibar"><div class="ibar-fill" style="width:30%;background:var(--amber);"></div></div>
+            <div class="ibar-val" style="color:var(--amber);">-30%</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Retraso del programa (est.)</div>
+            <div class="ibar"><div class="ibar-fill" style="width:70%;background:var(--green);"></div></div>
+            <div class="ibar-val" style="color:var(--green);">1-2 años</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-d);font-size:19px;font-weight:700;color:var(--amber);margin-bottom:20px;">Consecuencias Documentadas</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--red);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">🏭 Destrucción física de infraestructura</div>
+            <div style="font-size:13px;color:var(--muted);">~1,000 centrífugas destruidas de las ~9,000 en Natanz. Inspectores IAEA reportaron tasas anormalmente altas de fallas.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--amber);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">👨‍🔬 Despidos injustos de científicos</div>
+            <div style="font-size:13px;color:var(--muted);">El gobierno iraní despidió a ingenieros y científicos por "incompetencia", sin saber que eran víctimas de un cyberweapon.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--amber);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">🌍 Propagación involuntaria global</div>
+            <div style="font-size:13px;color:var(--muted);">Error en el código. Stuxnet infectó 200,000+ PCs en 155 países, incluyendo Chevron en EEUU. India e Indonesia también afectados.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--green);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">⏱️ Retraso del programa nuclear</div>
+            <div style="font-size:13px;color:var(--muted);">Estimaciones de 1-2 años de retraso. Esto abrió espacio para sanciones y negociaciones diplomáticas (Acuerdo Nuclear de 2015).</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--purple);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">💻 Inicio de la carrera de ciberarmamentos</div>
+            <div style="font-size:13px;color:var(--muted);">Stuxnet demostró que el ciberataque podía causar daño físico real. Desencadenó una carrera armamentista digital global. El propio código fue estudiado y reutilizado por otros actores.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Descendientes de Stuxnet -->
+    <div class="panel pp">
+      <div class="ptitle p">🧬 LOS DESCENDIENTES — El Legado de Stuxnet</div>
+      <p style="font-size:15px;color:rgba(240,232,216,0.75);line-height:1.8;margin-bottom:20px;">
+        Stuxnet no fue el fin — fue el comienzo. Su código, técnicas y conceptos inspiraron o fueron reutilizados en ataques posteriores:
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px;">
+        <div style="padding:18px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--red);margin-bottom:6px;">Duqu (2011)</div>
+          <div style="font-size:13px;color:var(--muted);">Espía industrial que usa el mismo framework de Stuxnet. Roba certificados digitales y datos de entidades nucleares iraníes.</div>
+        </div>
+        <div style="padding:18px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--amber);margin-bottom:6px;">Flame (2012)</div>
+          <div style="font-size:13px;color:var(--muted);">Megamalware de espionaje (20MB) con módulos para grabar audio, capturar pantallas y exfiltrar datos. Operación paralela a Stuxnet.</div>
+        </div>
+        <div style="padding:18px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--green);margin-bottom:6px;">Industroyer (2016)</div>
+          <div style="font-size:13px;color:var(--muted);">Atacó la red eléctrica de Ucrania. Dejó Kyiv sin electricidad durante una hora. Primer malware conocido capaz de atacar infraestructura eléctrica directamente.</div>
+        </div>
+        <div style="padding:18px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--cyan);margin-bottom:6px;">Triton/TRISIS (2017)</div>
+          <div style="font-size:13px;color:var(--muted);">Atacó sistemas de seguridad en una planta petroquímica de Arabia Saudita. Llamado "el malware más mortífero" — podría haber causado explosiones y muertes.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quote" style="margin-top:32px;">
+      "Stuxnet demostró que el software puede silenciosamente sabotear maquinaria, no solo robar datos. Técnicamente, combinó múltiples zero-days, certificados robados y un rootkit PLC para ejecutar sabotaje de precisión dentro de una instalación nuclear air-gapped."
+      <div class="quote-src">— The Hack Academy, Technical Breakdown of Stuxnet, 2025</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ ATRIBUCIÓN ════════════════════ -->
+<section id="atribucion">
+  <div class="wrap">
+    <div class="sec-label">07 — Autoría</div>
+    <h2 class="sec-title">¿Quién Creó <span class="r">Stuxnet</span>?</h2>
+
+    <p style="color:rgba(240,232,216,0.7);max-width:700px;margin-bottom:44px;font-size:17px;line-height:1.85;">
+      Ningún país ha reconocido oficialmente la autoría de Stuxnet. Sin embargo, la evidencia circunstancial, técnica y periodística apunta con alta certeza a una operación conjunta entre EEUU e Israel, denominada internamente <strong style="color:var(--cyan)">"Olympic Games"</strong>.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;" class="rg2">
+
+      <div class="panel pr">
+        <div class="ptitle r">🇺🇸 EVIDENCIA — Estados Unidos</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:rgba(240,232,216,0.75);line-height:1.7;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--red);">
+            El NYT (David Sanger, 2012) reveló la existencia de "Olympic Games" — el nombre de la operación bajo Bush, continuada por Obama.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--red);">
+            Los PLCs S7 que eran el objetivo de Stuxnet son los mismos que usan los laboratorios de EEUU. Se cree que el payload fue probado en centrífugas P-1 similares a las de Natanz, en Oak Ridge National Laboratory.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--red);">
+            El acceso al código fuente de Siemens STEP 7 —necesario para escribir el payload— se atribuye a ingenieros de la NSA.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--red);">
+            El "error" de propagación de 2010 fue reportado como una queja israelí: el código habría sido modificado por Israel de forma más agresiva de lo acordado.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel pa">
+        <div class="ptitle a">🇮🇱 EVIDENCIA — Israel</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;color:rgba(240,232,216,0.75);line-height:1.7;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            Stuxnet contenía una referencia oculta al número "19790509" — fecha del 9 de mayo de 1979, cuando fue ejecutado Habib Elghanian, judío iraní prominente. Referencia intencional o código de firma.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            El complejo nuclear secreto de Dimona en Israel fue utilizado para pruebas del arma. Israel tenía sus propias centrífugas P-1 (del programa libio desmantelado en 2003).
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            La Unidad 8200 (inteligencia cibernética israelí) tiene capacidades técnicas consistentes con las de Stuxnet.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            Israel fue el primero en descubrir (2010) que Stuxnet había "escapado" — lo cual reportaron a EEUU, según fuentes no confirmadas.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Por qué no Rusia ni China -->
+    <div class="panel pc">
+      <div class="ptitle c">🌐 ¿POR QUÉ NO RUSIA NI CHINA?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;" class="rg2">
+        <div>
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--red);margin-bottom:10px;">Descartado: Rusia</div>
+          <p style="font-size:14px;color:rgba(240,232,216,0.7);line-height:1.75;">Rusia era el principal contratista nuclear de Irán (planta de Bushehr). Atacar la infraestructura iraní podría haber dañado equipos rusos y perjudicado una relación comercial valiosa.</p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--red);margin-bottom:10px;">Descartado: China</div>
+          <p style="font-size:14px;color:rgba(240,232,216,0.7);line-height:1.75;">China tampoco tenía motivo para atacar a Irán, con quien mantenía relaciones económicas positivas. Además, el nivel de conocimiento sobre instalaciones específicas de Natanz apuntaba a inteligencia de primera mano.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ LECCIONES ════════════════════ -->
+<section id="lecciones">
+  <div class="wrap">
+    <div class="sec-label">08 — Lecciones Aprendidas</div>
+    <h2 class="sec-title">Lo que <span class="a">Cambió</span> para Siempre</h2>
+
+    <p style="color:rgba(240,232,216,0.7);max-width:680px;margin-bottom:48px;font-size:17px;line-height:1.85;">
+      Stuxnet no fue solo un incidente de ciberseguridad. Fue una ruptura en la historia de la guerra, la diplomacia y la seguridad de la infraestructura crítica. Estas son las lecciones que toda organización y gobierno debe internalizar.
+    </p>
+
+    <div class="lessons-grid">
+
+      <div class="lesson">
+        <div class="lesson-n">01</div>
+        <div class="lesson-title">El Air Gap no es garantía</div>
+        <div class="lesson-desc">Stuxnet demostró que una red completamente aislada de internet puede ser comprometida a través del vector humano. La seguridad digital perfecta sin control de los vectores físicos (USB, contratistas) es incompleta. El "air gap" ya no puede considerarse una defensa suficiente por sí sola.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">02</div>
+        <div class="lesson-title">La infraestructura física es objetivo del ciberespacio</div>
+        <div class="lesson-desc">Antes de Stuxnet, el mundo asumía que los ciberataques robaban datos o interrumpían servicios. Stuxnet demostró que el código puede destruir maquinaria física. Plantas de energía, agua, gas, transporte — todo lo controlado por PLCs/SCADA es un objetivo potencial.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">03</div>
+        <div class="lesson-title">Los zero-days son armas de valor estratégico</div>
+        <div class="lesson-desc">Usar 4 zero-days en una sola operación fue un gasto enorme de "munición" cibernética. Cada zero-day, una vez expuesto, muere. Las naciones ahora acumulan zero-days como activos de defensa nacional, creando incentivos para no revelar vulnerabilidades a los fabricantes de software.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">04</div>
+        <div class="lesson-title">La cadena de suministro es el talón de Aquiles</div>
+        <div class="lesson-desc">Stuxnet entró a través de contratistas externos. Los sistemas más seguros son tan robustos como su proveedor más débil. La seguridad debe extenderse a toda la cadena: empresas proveedoras, mantenimiento, consultores y cualquier persona con acceso físico.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">05</div>
+        <div class="lesson-title">Los certificados digitales son críticos</div>
+        <div class="lesson-desc">Stuxnet usó certificados robados para parecer software legítimo. Esto subvirtió completamente la confianza del sistema operativo. La gestión, rotación y monitoreo de certificados digitales es tan importante como las contraseñas. Un certificado comprometido puede abrir puertas a nivel de kernel.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">06</div>
+        <div class="lesson-title">Los sistemas ICS/SCADA tienen seguridad obsoleta</div>
+        <div class="lesson-desc">Los PLCs y sistemas SCADA fueron diseñados para disponibilidad y control, no para seguridad. Siemens tenía credenciales hardcodeadas en su base de datos (WinCCConnect/2WSXcder). Los sistemas industriales heredados deben ser auditados y modernizados con principios de seguridad actuales.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">07</div>
+        <div class="lesson-title">Las armas cibernéticas se escapan</div>
+        <div class="lesson-desc">Un error de código hizo que Stuxnet se propagara fuera de Irán, infectando 200,000 PCs globalmente, incluyendo Chevron en EEUU. Las armas cibernéticas, una vez liberadas, son difíciles de controlar. El código de Stuxnet fue estudiado y sus técnicas reutilizadas por otros actores (Duqu, Flame, Industroyer).</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">08</div>
+        <div class="lesson-title">La atribución en el ciberespacio es casi imposible</div>
+        <div class="lesson-desc">15 años después, ningún país ha reconocido oficialmente la autoría de Stuxnet. La atribución de ataques cibernéticos es técnicamente difícil y políticamente complicada. Esto crea un escenario de impunidad y ambigüedad que incentiva el uso de armas cibernéticas como herramientas de política exterior.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">09</div>
+        <div class="lesson-title">La ciberguerra ya comenzó — sin declaración</div>
+        <div class="lesson-desc">Stuxnet fue un acto de guerra cibernética —sabotaje de infraestructura estatal— sin que hubiera declaración de guerra, sin bajas humanas directas, y sin responsabilidad pública. Abrió una nueva dimensión de conflicto donde las reglas del derecho internacional aún están siendo definidas.</div>
+      </div>
+
+    </div>
+
+    <!-- Recomendaciones técnicas -->
+    <div class="panel pa" style="margin-top:56px;">
+      <div class="ptitle a">🛡️ CONTROLES TÉCNICOS — Cómo Proteger Infraestructura Crítica</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px;margin-top:12px;">
+        <div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--cyan);margin-bottom:8px;letter-spacing:0.15em;">SEGMENTACIÓN DE RED</div>
+          <ul style="list-style:none;font-size:13px;color:var(--muted);line-height:2;">
+            <li>→ Aislar redes OT/IT</li>
+            <li>→ Micro-segmentación por proceso</li>
+            <li>→ DMZ entre zonas seguras</li>
+            <li>→ Control estricto de USB</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--cyan);margin-bottom:8px;letter-spacing:0.15em;">MONITOREO ICS</div>
+          <ul style="list-style:none;font-size:13px;color:var(--muted);line-height:2;">
+            <li>→ Baseline de comportamiento PLC</li>
+            <li>→ Detectar cambios de firmware</li>
+            <li>→ Monitorear protocolos PROFIBUS</li>
+            <li>→ Alertas de frecuencia anómalas</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--cyan);margin-bottom:8px;letter-spacing:0.15em;">GESTIÓN DE ACCESOS</div>
+          <ul style="list-style:none;font-size:13px;color:var(--muted);line-height:2;">
+            <li>→ Control de contratistas</li>
+            <li>→ No credenciales default</li>
+            <li>→ MFA en sistemas SCADA</li>
+            <li>→ Principio de mínimo privilegio</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--cyan);margin-bottom:8px;letter-spacing:0.15em;">RESPUESTA A INCIDENTES</div>
+          <ul style="list-style:none;font-size:13px;color:var(--muted);line-height:2;">
+            <li>→ Plan ICS-CERT</li>
+            <li>→ Backups de firmware PLC</li>
+            <li>→ Verificación de integridad</li>
+            <li>→ Ejercicios de respuesta</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legado final -->
+    <div class="term" style="margin-top:32px;">
+      <div class="term-h"><div class="td td1"></div><div class="td td2"></div><div class="td td3"></div><div class="term-t">Stuxnet — Legado 15 años después</div></div>
+      <div class="term-b" style="font-size:13px;">
+        <div><span class="tc"># Stuxnet.exe — STATUS REPORT 2025</span></div>
+        <div>&nbsp;</div>
+        <div><span class="ta">PRIMERA ARMA CIBERNÉTICA FÍSICA:</span>   <span class="tg">✓ Confirmado</span></div>
+        <div><span class="ta">DESTRUCCIÓN DE INFRAESTRUCTURA:</span>    <span class="tg">✓ ~1,000 centrífugas</span></div>
+        <div><span class="ta">ATRIBUCIÓN OFICIAL:</span>                <span class="tr">✗ Ningún país admitió</span></div>
+        <div><span class="ta">PROGRAMA NUCLEAR IRANÍ:</span>            <span class="tc">Continuó — Natanz sigue activa</span></div>
+        <div><span class="ta">CARRERA CIBERARMAMENTISTA:</span>         <span class="tr">↑↑↑ Escala global</span></div>
+        <div><span class="ta">DESCENDIENTES (Duqu/Flame/Industroyer):</span> <span class="tr">✓ Activos</span></div>
+        <div><span class="ta">LECCIONES APRENDIDAS (global):</span>     <span class="ta">⚠ En progreso</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tc"># Jun 2025: Israel bombardeó Natanz directamente</span></div>
+        <div><span class="tc"># La operación cibernética que comenzó en 2005</span></div>
+        <div><span class="tc"># se complementó finalmente con ataques cinéticos</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tc"># "When Sergey Ulasen stumbled upon Stuxnet in 2010,</span></div>
+        <div><span class="tc">#  he revealed the world's first digital weapon of</span></div>
+        <div><span class="tc">#  mass disruption. Once code can cripple nuclear</span></div>
+        <div><span class="tc">#  facilities, the question isn't whether it will be</span></div>
+        <div><span class="tc">#  used again. It's when and by whom."</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tw">stuxnet@2025:~$</span> <span class="blink" style="color:var(--red);">█</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<footer>
+  <span class="footer-logo">STUXNET://CLASSIFIED</span>
+  <p style="margin-bottom:8px;">Análisis Forense de Ciberseguridad — Caso de Estudio Educativo</p>
+  <p>Fuentes: NATO CCDCOE · Kaspersky · Symantec · CSO Online · Wikipedia · Arizona University · NYT</p>
+  <p style="margin-top:14px;color:rgba(106,90,58,0.5);font-size:10px;">
+    Operation Olympic Games · 2005–2012 · EEUU/Israel (atribución probable, no confirmada)<br>
+    Natanz · Siemens S7 · STEP 7 · WinCC · CVE-2010-2568 · CVE-2010-2772 · CVE-2010-2729 · CVE-2010-2743
+  </p>
+</footer>
+
+<style>
+  @media(max-width:900px){.rg2-3{grid-template-columns:1fr 1fr!important}}
+  @media(max-width:768px){.rg2{grid-template-columns:1fr!important}}
+</style>
+
+<script>
+  // Journey step animations
+  const jObs = new IntersectionObserver((e) => {
+    e.forEach((entry,i) => { if(entry.isIntersecting) setTimeout(()=>entry.target.classList.add('vis'),i*80); });
+  }, {threshold:0.1});
+  document.querySelectorAll('.j-step').forEach(s => jObs.observe(s));
+
+  // Fade in
+  const fObs = new IntersectionObserver((e) => {
+    e.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('vis'); });
+  }, {threshold:0.08});
+  document.querySelectorAll('.panel,.tech-card,.lesson,.chip,.fade-in').forEach(el => {
+    el.classList.add('fade-in');
+    fObs.observe(el);
+  });
+
+  // Impact bars animation
+  const iObs = new IntersectionObserver((e) => {
+    e.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.querySelectorAll('.ibar-fill').forEach(bar => {
+          const w = bar.style.width;
+          bar.style.width = '0';
+          setTimeout(()=>{ bar.style.width = w; }, 100);
+        });
+      }
+    });
+  }, {threshold:0.3});
+  document.querySelectorAll('.ibar-wrap').forEach(el => iObs.observe(el));
+
+  // Nav active
+  const secs = document.querySelectorAll('section[id]');
+  const navAs = document.querySelectorAll('.nav-a');
+  window.addEventListener('scroll', () => {
+    let cur='';
+    secs.forEach(s => { if(window.scrollY >= s.offsetTop - 120) cur = s.id; });
+    navAs.forEach(a => a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+  });
+
+  // Glitch effect on title
+  const title = document.querySelector('.hero h1 .l1');
+  if(title){
+    setInterval(()=>{
+      title.style.textShadow='3px 0 #00e5d4,-3px 0 #ff6b00,0 0 50px rgba(255,58,26,0.5)';
+      setTimeout(()=>{
+        title.style.textShadow='0 0 24px rgba(255,58,26,0.45),0 0 80px rgba(255,58,26,0.2)';
+      },100);
+    }, 4000);
+  }
+</script>
+</body>
+</html>
