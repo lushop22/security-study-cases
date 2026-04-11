@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIRAI BOTNET — El Ejército de Cosas</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #030a06;
+    --deep:    #050e09;
+    --panel:   #080f0c;
+    --surface: #0c1610;
+    --border:  #122018;
+    --border-hi:#1e4028;
+    --green:   #00ff88;
+    --green-d: rgba(0,255,136,0.35);
+    --cyan:    #00e5ff;
+    --amber:   #ffb800;
+    --red:     #ff3a3a;
+    --purple:  #a855f7;
+    --orange:  #ff6b00;
+    --teal:    #00d4aa;
+    --white:   #d0f0e0;
+    --muted:   #2a4a38;
+    --font-d:  'Orbitron', monospace;
+    --font-m:  'Share Tech Mono', monospace;
+    --font-b:  'Rajdhani', sans-serif;
+    --glow-g:  0 0 24px rgba(0,255,136,0.4);
+    --glow-c:  0 0 20px rgba(0,229,255,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font-b);
+    font-size: 17px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,136,0.007) 3px,rgba(0,255,136,0.007) 4px);
+    pointer-events: none; z-index: 9990;
+  }
+
+  /* grid */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.022) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,255,136,0.022) 1px,transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 28s linear infinite;
+    pointer-events: none; z-index: 0;
+  }
+  @keyframes gridMove { from{background-position:0 0} to{background-position:50px 50px} }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 40px 80px;
+    overflow: hidden;
+    z-index: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 20%, rgba(0,255,136,0.09) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 80% 70%, rgba(0,229,255,0.05) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  /* IoT device icons floating in background */
+  .hero-icons {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .hero-icon {
+    position: absolute;
+    font-size: clamp(16px, 3vw, 32px);
+    opacity: 0.06;
+    animation: floatIcon linear infinite;
+  }
+  @keyframes floatIcon {
+    from { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10%  { opacity: 0.06; }
+    90%  { opacity: 0.06; }
+    to   { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+  }
+
+  .hero-alert-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--cyan), var(--green));
+    background-size: 200% 100%;
+    animation: barSlide 3s linear infinite;
+  }
+  @keyframes barSlide { from{background-position:0 0} to{background-position:200% 0} }
+
+  .hero-stamp {
+    position: absolute;
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%) rotate(-8deg);
+    font-family: var(--font-d);
+    font-size: clamp(50px, 8vw, 110px);
+    font-weight: 900;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(0,255,136,0.07);
+    letter-spacing: 0.05em;
+    line-height: 1.1;
+    text-align: right;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-c { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  .hero-eyebrow {
+    font-family: var(--font-m);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.1s forwards;
+  }
+  .hero-eyebrow::before { content: '⬡'; }
+  .hero-eyebrow::after  { content: '⬡'; }
+
+  .hero h1 {
+    font-family: var(--font-d);
+    font-weight: 900;
+    font-size: clamp(60px, 11vw, 140px);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.2s forwards;
+  }
+
+  .hero h1 .l1 {
+    display: block;
+    color: var(--green);
+    text-shadow: var(--glow-g), 0 0 80px rgba(0,255,136,0.15);
+  }
+  .hero h1 .l2 {
+    display: block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(208,240,224,0.12);
+    font-size: 0.38em;
+    letter-spacing: 0.16em;
+    margin-top: 12px;
+  }
+
+  .hero-lead {
+    max-width: 620px;
+    color: rgba(208,240,224,0.65);
+    font-size: 18px;
+    font-weight: 300;
+    line-height: 1.85;
+    margin: 24px 0 44px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.3s forwards;
+  }
+
+  .hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 0.4s forwards;
+  }
+
+  .hstat {
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.2);
+    padding: 13px 20px;
+    font-family: var(--font-m);
+  }
+  .hstat .n { display: block; font-size: 24px; color: var(--green); line-height: 1.1; margin-bottom: 2px; font-weight: 500; text-shadow: var(--glow-g); }
+  .hstat .l { font-size: 9px; color: var(--muted); letter-spacing: 0.18em; text-transform: uppercase; }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(3,10,6,0.96);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center;
+    overflow-x: auto; scrollbar-width: none;
+    box-shadow: 0 1px 0 rgba(0,255,136,0.07);
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-brand { font-family: var(--font-d); font-size: 12px; color: var(--green); letter-spacing: 0.08em; padding-right: 18px; border-right: 1px solid var(--border); margin-right: 4px; white-space: nowrap; }
+  .nav-a { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 17px 14px; text-decoration: none; white-space: nowrap; transition: color 0.2s; }
+  .nav-a:hover, .nav-a.active { color: var(--green); }
+
+  /* ── LAYOUT ── */
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 1; }
+  section { padding: 96px 0; border-bottom: 1px solid var(--border); position: relative; z-index: 1; }
+
+  .sec-label {
+    font-family: var(--font-m); font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--green); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .sec-label::before { content: '>_'; opacity: 0.5; }
+  .sec-label::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--green); opacity: 0.22; }
+
+  .sec-title {
+    font-family: var(--font-d); font-size: clamp(24px, 3.5vw, 44px); font-weight: 700;
+    letter-spacing: 0.03em; line-height: 1.1; margin-bottom: 44px; color: var(--white);
+  }
+  .sec-title .g { color: var(--green); }
+  .sec-title .c { color: var(--cyan); }
+  .sec-title .a { color: var(--amber); }
+  .sec-title .r { color: var(--red); }
+
+  /* ── PANEL ── */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); padding: 28px 32px;
+    position: relative; overflow: hidden; transition: border-color 0.3s;
+  }
+  .panel:hover { border-color: var(--border-hi); }
+  .panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .panel.pg::before { background: linear-gradient(90deg,var(--green),transparent); }
+  .panel.pc::before { background: linear-gradient(90deg,var(--cyan),transparent); }
+  .panel.pa::before { background: linear-gradient(90deg,var(--amber),transparent); }
+  .panel.pr::before { background: linear-gradient(90deg,var(--red),transparent); }
+  .panel.pp::before { background: linear-gradient(90deg,var(--purple),transparent); }
+  .panel.pt::before { background: linear-gradient(90deg,var(--teal),transparent); }
+  .ptitle { font-family: var(--font-d); font-size: 13px; letter-spacing: 0.06em; margin-bottom: 14px; }
+  .ptitle.g{color:var(--green)} .ptitle.c{color:var(--cyan)} .ptitle.a{color:var(--amber)} .ptitle.r{color:var(--red)} .ptitle.p{color:var(--purple)} .ptitle.t{color:var(--teal)}
+
+  /* ── TERMINAL ── */
+  .term { background: #020604; border: 1px solid var(--border); font-family: var(--font-m); font-size: 13px; overflow: hidden; }
+  .term-h { background: var(--surface); border-bottom: 1px solid var(--border); padding: 9px 14px; display: flex; align-items: center; gap: 7px; }
+  .td{width:10px;height:10px;border-radius:50%;} .td1{background:#ff5f57} .td2{background:#ffbd2e} .td3{background:#28c940}
+  .term-t { flex:1; text-align:center; font-size:10px; color:var(--muted); letter-spacing:0.1em; }
+  .term-b { padding:18px 22px; line-height:2; }
+  .tc{color:var(--muted)} .tg2{color:var(--green)} .ta{color:var(--amber)} .tr{color:var(--red)}
+  .tw{color:var(--white)} .tc2{color:var(--cyan)} .tp{color:var(--purple)} .tt{color:var(--teal)}
+
+  /* ── JOURNEY STEPS ── */
+  .journey { position: relative; }
+  .j-line { position: absolute; left: 34px; top: 68px; bottom: 0; width: 2px; background: linear-gradient(to bottom,var(--green),rgba(0,255,136,0.15),transparent); }
+  .j-step { display: grid; grid-template-columns: 68px 1fr; gap: 20px; margin-bottom: 8px; opacity:0; transform:translateX(-14px); transition:opacity 0.5s ease,transform 0.5s ease; }
+  .j-step.vis { opacity:1; transform:translateX(0); }
+  .j-node { width:68px; height:68px; border:2px solid; display:flex; align-items:center; justify-content:center; font-size:24px; position:relative; z-index:2; background:var(--bg); flex-shrink:0; clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%); }
+  .jn-g{border-color:var(--green);box-shadow:var(--glow-g)}
+  .jn-c{border-color:var(--cyan);box-shadow:var(--glow-c)}
+  .jn-a{border-color:var(--amber);box-shadow:0 0 18px rgba(255,184,0,0.35)}
+  .jn-r{border-color:var(--red);box-shadow:0 0 18px rgba(255,58,58,0.35)}
+  .jn-p{border-color:var(--purple);box-shadow:0 0 18px rgba(168,85,247,0.35)}
+  .jn-t{border-color:var(--teal);box-shadow:0 0 18px rgba(0,212,170,0.35)}
+  .j-card { background:var(--panel); border:1px solid var(--border); padding:24px 28px; margin-bottom:40px; transition:border-color 0.3s; }
+  .j-card:hover { border-color:var(--border-hi); }
+  .jl-g{border-left:3px solid var(--green)} .jl-c{border-left:3px solid var(--cyan)} .jl-a{border-left:3px solid var(--amber)} .jl-r{border-left:3px solid var(--red)} .jl-p{border-left:3px solid var(--purple)} .jl-t{border-left:3px solid var(--teal)}
+  .j-phase { font-family:var(--font-m); font-size:9px; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:5px; }
+  .jp-g{color:var(--green)} .jp-c{color:var(--cyan)} .jp-a{color:var(--amber)} .jp-r{color:var(--red)} .jp-p{color:var(--purple)} .jp-t{color:var(--teal)}
+  .j-title { font-family:var(--font-d); font-size:18px; font-weight:700; letter-spacing:0.04em; margin-bottom:14px; color:var(--white); }
+  .j-body { color:rgba(208,240,224,0.75); font-size:16px; line-height:1.85; }
+
+  /* ── CALLOUT ── */
+  .box { display:flex; gap:14px; align-items:flex-start; padding:16px 20px; margin-top:18px; border:1px solid; }
+  .box.g{background:rgba(0,255,136,0.04);border-color:rgba(0,255,136,0.15)}
+  .box.c{background:rgba(0,229,255,0.04);border-color:rgba(0,229,255,0.15)}
+  .box.a{background:rgba(255,184,0,0.04);border-color:rgba(255,184,0,0.15)}
+  .box.r{background:rgba(255,58,58,0.04);border-color:rgba(255,58,58,0.15)}
+  .box.p{background:rgba(168,85,247,0.04);border-color:rgba(168,85,247,0.15)}
+  .box.t{background:rgba(0,212,170,0.04);border-color:rgba(0,212,170,0.15)}
+  .box-i{font-size:20px;flex-shrink:0;margin-top:2px}
+  .box-t{font-size:14px;color:rgba(208,240,224,0.8);line-height:1.7}
+  .box-t strong{color:var(--white)}
+
+  /* ── QUOTE ── */
+  .quote { border-left:3px solid var(--green); padding:20px 28px; background:rgba(0,255,136,0.04); margin:36px 0; font-style:italic; font-size:17px; color:rgba(208,240,224,0.85); line-height:1.8; }
+  .quote-src { margin-top:10px; font-style:normal; font-family:var(--font-m); font-size:10px; color:var(--muted); letter-spacing:0.1em; }
+
+  /* ── IOT DEVICE GRID ── */
+  .iot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:2px; }
+  .iot-card { background:var(--panel); border:1px solid var(--border); padding:20px; transition:all 0.3s; position:relative; overflow:hidden; }
+  .iot-card:hover { border-color:var(--border-hi); }
+  .iot-card::after { content:''; position:absolute; bottom:0;left:0;right:0; height:2px; transform:scaleX(0); transform-origin:left; transition:transform 0.3s; }
+  .iot-card.ig::after{background:var(--green)} .iot-card.ic::after{background:var(--cyan)} .iot-card.ia::after{background:var(--amber)}
+  .iot-card:hover::after { transform:scaleX(1); }
+  .iot-icon { font-size:32px; margin-bottom:10px; display:block; }
+  .iot-name { font-family:var(--font-d); font-size:12px; font-weight:700; margin-bottom:4px; color:var(--white); }
+  .iot-vuln { font-family:var(--font-m); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; }
+  .iot-desc { font-size:12px; color:var(--muted); line-height:1.6; }
+
+  /* ── LESSONS ── */
+  .lessons-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:2px; }
+  .lesson { background:var(--panel); border:1px solid var(--border); padding:28px; transition:border-color 0.3s; }
+  .lesson:hover { border-color:var(--green); }
+  .lesson-n { font-family:var(--font-d); font-size:50px; font-weight:800; color:rgba(255,255,255,0.04); line-height:1; margin-bottom:10px; letter-spacing:-0.04em; }
+  .lesson-title { font-family:var(--font-d); font-size:15px; font-weight:700; margin-bottom:10px; color:var(--green); }
+  .lesson-desc { font-size:14px; color:var(--muted); line-height:1.7; }
+
+  /* ── TIMELINE TABLE ── */
+  .ttable { width:100%; border-collapse:collapse; font-size:14px; }
+  .ttable th { font-family:var(--font-m); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); padding:11px 14px; border-bottom:1px solid var(--border); text-align:left; background:var(--surface); }
+  .ttable td { padding:14px; border-bottom:1px solid rgba(255,255,255,0.04); vertical-align:top; }
+  .ttable tr:hover td { background:rgba(0,255,136,0.02); }
+  .tdate { font-family:var(--font-m); font-size:11px; color:var(--muted); white-space:nowrap; }
+  .tsev { display:inline-block; font-family:var(--font-m); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; padding:3px 8px; border:1px solid; }
+  .sev-r{color:var(--red);border-color:rgba(255,58,58,0.4);background:rgba(255,58,58,0.06)}
+  .sev-a{color:var(--amber);border-color:rgba(255,184,0,0.4);background:rgba(255,184,0,0.06)}
+  .sev-g{color:var(--green);border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.04)}
+
+  /* ── IMPACT BARS ── */
+  .ibar-wrap { display:flex; flex-direction:column; gap:16px; }
+  .ibar-row { display:grid; grid-template-columns:200px 1fr 80px; gap:12px; align-items:center; }
+  .ibar-label { font-family:var(--font-m); font-size:12px; color:var(--white); }
+  .ibar { height:8px; background:var(--surface); position:relative; border:1px solid var(--border); }
+  .ibar-fill { position:absolute; top:0;left:0;bottom:0; transition:width 1.5s ease; }
+  .ibar-val { font-family:var(--font-m); font-size:11px; text-align:right; }
+
+  /* ── TECH TABLE ── */
+  .vtable { width:100%; border-collapse:collapse; font-family:var(--font-m); font-size:12px; }
+  .vtable th { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); padding:11px 14px; border-bottom:1px solid var(--border); text-align:left; background:var(--surface); }
+  .vtable td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.04); vertical-align:top; }
+  .vtable tr:hover td { background:rgba(0,255,136,0.02); }
+
+  /* ── CREDENTIAL LIST ── */
+  .cred-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:2px; }
+  .cred-pair { background:var(--panel); border:1px solid var(--border); padding:14px 16px; font-family:var(--font-m); font-size:12px; }
+  .cred-user { color:var(--amber); margin-bottom:2px; }
+  .cred-pass { color:var(--green); }
+
+  /* ── FADE ── */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { opacity:0; transform:translateY(14px); transition:opacity 0.5s ease,transform 0.5s ease; }
+  .fade-in.vis { opacity:1; transform:translateY(0); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .blink { animation:blink 1s step-end infinite; }
+
+  /* ── FOOTER ── */
+  footer { padding:56px 40px; text-align:center; font-family:var(--font-m); font-size:11px; color:var(--muted); letter-spacing:0.1em; position:relative; z-index:1; }
+  .footer-logo { font-family:var(--font-d); font-size:20px; color:var(--green); letter-spacing:0.15em; text-shadow:var(--glow-g); display:block; margin-bottom:14px; }
+
+  @media(max-width:768px){
+    .hero{padding:60px 24px 60px}
+    .wrap{padding:0 24px}
+    section{padding:72px 0}
+    .j-step{grid-template-columns:56px 1fr;gap:14px}
+    .j-node{width:56px;height:56px;font-size:20px}
+    .rg2{grid-template-columns:1fr!important}
+    .ibar-row{grid-template-columns:1fr;gap:6px}
+  }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- floating IoT icons background -->
+<div class="hero-icons" aria-hidden="true">
+  <span class="hero-icon" style="left:5%;animation-duration:14s;animation-delay:0s;">📷</span>
+  <span class="hero-icon" style="left:15%;animation-duration:18s;animation-delay:2s;">📡</span>
+  <span class="hero-icon" style="left:25%;animation-duration:12s;animation-delay:4s;">🖨️</span>
+  <span class="hero-icon" style="left:35%;animation-duration:16s;animation-delay:1s;">🔌</span>
+  <span class="hero-icon" style="left:50%;animation-duration:20s;animation-delay:6s;">📺</span>
+  <span class="hero-icon" style="left:60%;animation-duration:13s;animation-delay:3s;">📹</span>
+  <span class="hero-icon" style="left:72%;animation-duration:17s;animation-delay:5s;">🌡️</span>
+  <span class="hero-icon" style="left:85%;animation-duration:11s;animation-delay:7s;">💡</span>
+  <span class="hero-icon" style="left:92%;animation-duration:15s;animation-delay:9s;">🔒</span>
+  <span class="hero-icon" style="left:42%;animation-duration:22s;animation-delay:11s;">📱</span>
+  <span class="hero-icon" style="left:8%;animation-duration:19s;animation-delay:8s;">🏠</span>
+  <span class="hero-icon" style="left:78%;animation-duration:14s;animation-delay:12s;">🎮</span>
+</div>
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<section class="hero" id="inicio">
+  <div class="hero-bg"></div>
+  <div class="hero-alert-bar"></div>
+  <div class="hero-stamp">MIRAI<br>未来<br>BOTNET</div>
+
+  <div class="hero-c">
+    <div class="hero-eyebrow">Análisis Forense — IoT Botnet — DDoS Masivo — 2016</div>
+    <h1>
+      <span class="l1">MIRAI</span>
+      <span class="l2">El Ejército de las Cosas — 未来 (Futuro)</span>
+    </h1>
+    <p class="hero-lead">
+      En 2016, un botnet formado por <strong style="color:var(--white)">cámaras de seguridad, DVRs y routers domésticos</strong> con contraseñas por defecto derribó una fracción significativa de internet durante casi un día. El arma no fue código sofisticado — fue la <strong style="color:var(--green)">negligencia masiva de los fabricantes de IoT</strong>.
+    </p>
+    <div class="hero-stats">
+      <div class="hstat"><span class="n">600K+</span><span class="l">Dispositivos infectados</span></div>
+      <div class="hstat"><span class="n">620 Gbps</span><span class="l">Pico DDoS en Krebs</span></div>
+      <div class="hstat"><span class="n">1 Tbps+</span><span class="l">Pico DDoS en OVH</span></div>
+      <div class="hstat"><span class="n">1,200+</span><span class="l">Sitios caídos</span></div>
+      <div class="hstat"><span class="n">62</span><span class="l">Credenciales default</span></div>
+      <div class="hstat"><span class="n">21 años</span><span class="l">Edad creador principal</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ NAV ════════════════════ -->
+<nav class="nav">
+  <div class="nav-brand">MIRAI://</div>
+  <a class="nav-a" href="#contexto">Contexto</a>
+  <a class="nav-a" href="#cronologia">Cronología</a>
+  <a class="nav-a" href="#anatomia">Anatomía</a>
+  <a class="nav-a" href="#ataque">El Ataque</a>
+  <a class="nav-a" href="#iot-victims">Dispositivos</a>
+  <a class="nav-a" href="#forense">Forense</a>
+  <a class="nav-a" href="#impacto">Impacto</a>
+  <a class="nav-a" href="#lecciones">Lecciones</a>
+</nav>
+
+<!-- ════════════════════ CONTEXTO ════════════════════ -->
+<section id="contexto">
+  <div class="wrap">
+    <div class="sec-label">01 — Contexto</div>
+    <h2 class="sec-title">El Mundo de <span class="g">las Cosas</span> Conectadas</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:40px;" class="rg2">
+      <div>
+        <p style="color:rgba(208,240,224,0.8);font-size:17px;line-height:1.85;margin-bottom:18px;">
+          Para 2016, la <strong style="color:var(--white)">Internet de las Cosas (IoT)</strong> había colonizado los hogares del mundo: cámaras de seguridad IP, grabadoras de video digital (DVR), routers domésticos, monitores de bebés, televisores inteligentes. Estimaciones de la época hablaban de <strong style="color:var(--green)">más de 6 mil millones de dispositivos</strong> conectados a internet.
+        </p>
+        <p style="color:rgba(208,240,224,0.8);font-size:17px;line-height:1.85;margin-bottom:18px;">
+          El problema: estos dispositivos eran fabricados priorizando el costo y la funcionalidad, no la seguridad. La mayoría salían de fábrica con <strong style="color:var(--amber)">contraseñas por defecto escritas en manuales públicos</strong> — y los usuarios nunca las cambiaban. Muchos ni siquiera tenían la opción de hacerlo.
+        </p>
+        <p style="color:rgba(208,240,224,0.8);font-size:17px;line-height:1.85;">
+          Tres estudiantes universitarios — Paras Jha (21), Josiah White (20) y Dalton Norman (21) — vieron en esto una oportunidad. No para espionar ni robar datos: para construir el mayor ejército DDoS de la historia y extorsionar servidores de <strong style="color:var(--green)">Minecraft</strong>.
+        </p>
+      </div>
+      <div>
+        <div class="panel pg">
+          <div class="ptitle g">🌐 ¿QUÉ ES UN BOTNET?</div>
+          <p style="font-size:15px;color:rgba(208,240,224,0.75);line-height:1.8;margin-bottom:16px;">
+            Una <strong style="color:var(--white)">botnet</strong> (robot network) es una red de dispositivos infectados que un atacante controla de forma remota desde un servidor C&C (Command & Control). Cada dispositivo infectado se convierte en un "bot" que ejecuta órdenes sin que el dueño lo sepa.
+          </p>
+          <div style="font-family:var(--font-m);font-size:12px;display:flex;flex-direction:column;gap:6px;">
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--green);">
+              <span style="color:var(--green)">Atacante</span> → envía orden de ataque al C&C
+            </div>
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--cyan);">
+              <span style="color:var(--cyan)">C&C Server</span> → reenvía orden a todos los bots
+            </div>
+            <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+              <span style="color:var(--amber)">600,000 bots IoT</span> → inundan el objetivo simultáneamente
+            </div>
+            <div style="padding:10px 14px;background:rgba(255,58,58,0.06);border:1px solid rgba(255,58,58,0.2);">
+              <span style="color:var(--red)">Víctima</span> → servidores colapsados, servicio caído
+            </div>
+          </div>
+        </div>
+
+        <div class="box a" style="margin-top:16px;">
+          <div class="box-i">💡</div>
+          <div class="box-t"><strong>Mirai significa "futuro" (未来) en japonés</strong>, tomado de la serie de anime <em>Mirai Nikki</em>. El nombre fue elegido por su creador, que operaba bajo el alias "Anna-senpai". La ironía es que el malware efectivamente modeló el futuro de los ataques IoT.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTORES -->
+    <div class="panel pg" style="margin-bottom:0;">
+      <div class="ptitle g">👥 LOS CREADORES — Tres Universitarios</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:8px;" class="rg2-3">
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--green);margin-bottom:6px;">Paras Jha</div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:8px;">Alias: Anna-senpai · 21 años</div>
+          <div style="font-size:13px;color:rgba(208,240,224,0.7);line-height:1.6;">Creador principal. Estudiante de Rutgers University. Co-fundó ProTraf Solutions, empresa de mitigación DDoS que atacaba a sus propios clientes.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--cyan);margin-bottom:6px;">Josiah White</div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:8px;">20 años · Co-fundador ProTraf</div>
+          <div style="font-size:13px;color:rgba(208,240,224,0.7);line-height:1.6;">Co-creador del botnet. Junto a Jha, ofreció servicios de mitigación DDoS mientras operaban el botnet que realizaba los ataques.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:13px;color:var(--amber);margin-bottom:6px;">Dalton Norman</div>
+          <div style="font-family:var(--font-m);font-size:10px;color:var(--muted);margin-bottom:8px;">21 años · Técnico del botnet</div>
+          <div style="font-size:13px;color:rgba(208,240,224,0.7);line-height:1.6;">Identificó los exploits de zero-day usados para infectar dispositivos IoT y los integró al código de Mirai.</div>
+        </div>
+      </div>
+      <div class="box g" style="margin-top:16px;">
+        <div class="box-i">⚖️</div>
+        <div class="box-t"><strong>Sentencia (13 diciembre 2017):</strong> Los tres se declararon culpables. Por su cooperación con el gobierno en otras investigaciones de ciberseguridad, recibieron probation y servicio comunitario — sin prisión.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ CRONOLOGÍA ════════════════════ -->
+<section id="cronologia">
+  <div class="wrap">
+    <div class="sec-label">02 — Línea de Tiempo</div>
+    <h2 class="sec-title">Cronología del <span class="a">Ataque</span></h2>
+
+    <table class="ttable">
+      <thead><tr><th>Fecha</th><th>Evento</th><th>Severidad</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="tdate">Ago 2016</td>
+          <td>
+            <strong style="color:var(--white);">Mirai descubierto por MalwareMustDie</strong><br>
+            <span style="color:var(--muted);font-size:13px;">El grupo de white-hat malware research "MalwareMustDie" identifica el botnet por primera vez. Inicialmente genera poca atención. Mirai ya está siendo usado para atacar servidores de Minecraft.</span>
+          </td>
+          <td><span class="tsev sev-a">Descubrimiento</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">20 Sep 2016</td>
+          <td>
+            <strong style="color:var(--white);">Ataque masivo a KrebsOnSecurity — 620 Gbps</strong><br>
+            <span style="color:var(--muted);font-size:13px;">El blog de seguridad del investigador Brian Krebs es atacado con 620 Gbps — el mayor DDoS conocido hasta esa fecha. Akamai, que protegía el sitio gratuitamente, retira la protección. Krebs migra su sitio a Google Project Shield.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">20 Sep 2016</td>
+          <td>
+            <strong style="color:var(--white);">Ataque a OVH — supera 1 Tbps</strong><br>
+            <span style="color:var(--muted);font-size:13px;">El mismo día, el proveedor de hosting francés OVH recibe un ataque de más de 1 Tbps — el primero en superar ese umbral en la historia. El fundador Octave Klaba reporta ataques simultáneos de más de 100 Gbps por 25 horas.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico — Récord</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">1 Oct 2016</td>
+          <td>
+            <strong style="color:var(--white);">Liberación del código fuente de Mirai</strong><br>
+            <span style="color:var(--muted);font-size:13px;">"Anna-senpai" publica el código fuente de Mirai en un foro de hacking. Aparentemente para dificultar la atribución del ataque a Krebs. El código queda disponible en GitHub. Cualquier persona puede construir su propio botnet Mirai.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">21 Oct 2016</td>
+          <td>
+            <strong style="color:var(--white);">Ataque a Dyn — Internet se cae</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Tres oleadas de ataques DDoS contra Dyn (proveedor DNS crítico). Twitter, Netflix, Reddit, GitHub, Airbnb, Amazon, New York Times, PayPal inaccesibles por horas para millones de usuarios en Norteamérica y Europa. Solicitudes maliciosas desde decenas de millones de IPs.</span>
+          </td>
+          <td><span class="tsev sev-r">Crítico — Histórico</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">Nov 2016</td>
+          <td>
+            <strong style="color:var(--white);">Ataque a Liberia + Deutsche Telekom</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Una variante de Mirai ataca la infraestructura de internet de Liberia. Deutsche Telekom sufre una caída masiva cuando 900,000 de sus routers son comprometidos por una variante buggy de Mirai que los deja offline al intentar infectarlos.</span>
+          </td>
+          <td><span class="tsev sev-a">Alto</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">17 Ene 2017</td>
+          <td>
+            <strong style="color:var(--white);">Brian Krebs revela la identidad de "Anna-senpai"</strong><br>
+            <span style="color:var(--muted);font-size:13px;">Krebs publica investigación identificando a Paras Jha como el presunto autor de Mirai, basándose en análisis de código, actividad en foros y registros de dominio. Jha inicialmente lo niega.</span>
+          </td>
+          <td><span class="tsev sev-a">Alto</span></td>
+        </tr>
+        <tr>
+          <td class="tdate">13 Dic 2017</td>
+          <td>
+            <strong style="color:var(--white);">Los tres creadores se declaran culpables</strong><br>
+            <span style="color:var(--muted);font-size:13px;">El Departamento de Justicia de EEUU anuncia que Paras Jha, Josiah White y Dalton Norman se han declarado culpables de cargos relacionados con el botnet Mirai y fraude de clics. Sentencia: probation y servicio comunitario.</span>
+          </td>
+          <td><span class="tsev sev-g">Resolución</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════════════ ANATOMÍA ════════════════════ -->
+<section id="anatomia">
+  <div class="wrap">
+    <div class="sec-label">03 — Análisis Técnico</div>
+    <h2 class="sec-title">Anatomía del <span class="g">Botnet</span></h2>
+
+    <p style="color:rgba(208,240,224,0.7);max-width:700px;margin-bottom:44px;font-size:17px;line-height:1.85;">
+      A diferencia de Stuxnet, Mirai no era técnicamente sofisticado. Su poder residía en la escala: infectar <strong style="color:var(--white)">cientos de miles de dispositivos</strong> explotando una debilidad universal — las contraseñas por defecto. Su código fue publicado en GitHub y estudiado en detalle por investigadores de la Universidad de Texas en San Antonio.
+    </p>
+
+    <!-- Arquitectura del botnet -->
+    <div class="panel pg" style="margin-bottom:24px;">
+      <div class="ptitle g">🏗️ ARQUITECTURA DEL BOTNET MIRAI</div>
+      <p style="font-size:15px;color:rgba(208,240,224,0.75);line-height:1.8;margin-bottom:20px;">
+        Según el análisis forense del paper publicado en <em>Forensic Science International: Digital Investigation</em> (Zhang et al., 2020), un botnet Mirai estándar consiste en cinco componentes:
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0;align-items:center;font-family:var(--font-m);font-size:12px;max-width:700px;margin:0 auto;">
+        <div style="padding:14px 28px;background:rgba(0,255,136,0.06);border:2px solid rgba(0,255,136,0.3);text-align:center;width:100%;box-shadow:0 0 20px rgba(0,255,136,0.08);">
+          <div style="color:var(--green);font-size:14px;margin-bottom:4px;">👨‍💻 Terminal del Atacante</div>
+          <div style="color:var(--muted);font-size:10px;">Telnet al CNC → envía comandos DDoS</div>
+        </div>
+        <div style="color:var(--muted);text-align:center;padding:6px 0;">↕</div>
+        <div style="padding:14px 28px;background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);text-align:center;width:100%;">
+          <div style="color:var(--cyan);">🖥️ CNC Server (Command & Control)</div>
+          <div style="color:var(--muted);font-size:10px;">Recibe comandos · gestiona bots activos · registra historial en MySQL</div>
+        </div>
+        <div style="display:flex;width:100%;justify-content:space-between;padding:6px 40px;color:var(--muted);">
+          <span>↕</span><span>↕</span><span>↕</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;width:100%;">
+          <div style="padding:12px;background:var(--surface);border:1px solid var(--border);text-align:center;">
+            <div style="color:var(--amber);">🗄️ MySQL DB</div>
+            <div style="color:var(--muted);font-size:10px;">Historial de ataques, credenciales CNC, whitelist de IPs</div>
+          </div>
+          <div style="padding:12px;background:var(--surface);border:1px solid var(--border);text-align:center;">
+            <div style="color:var(--amber);">📡 Scan Receiver + Loader</div>
+            <div style="color:var(--muted);font-size:10px;">Recibe reportes de vulnerables · instala el bot en nuevos dispositivos</div>
+          </div>
+          <div style="padding:12px;background:var(--surface);border:1px solid var(--border);text-align:center;">
+            <div style="color:var(--amber);">🔗 DNS Server</div>
+            <div style="color:var(--muted);font-size:10px;">Resuelve dominios internos · permite mover IPs sin recompilar</div>
+          </div>
+        </div>
+        <div style="color:var(--muted);text-align:center;padding:6px 0;">↕</div>
+        <div style="padding:14px 28px;background:rgba(255,107,0,0.05);border:1px solid rgba(255,107,0,0.2);text-align:center;width:100%;">
+          <div style="color:var(--orange);">⬡⬡⬡ 600,000+ Bots IoT Infectados ⬡⬡⬡</div>
+          <div style="color:var(--muted);font-size:10px;">Cámaras IP · DVR · Routers · Smart TVs — inundan el objetivo con tráfico DDoS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Las 62 credenciales -->
+    <div class="panel pa" style="margin-bottom:24px;">
+      <div class="ptitle a">🔑 LAS 62 CREDENCIALES — La Clave del Éxito Masivo</div>
+      <p style="font-size:15px;color:rgba(208,240,224,0.75);line-height:1.8;margin-bottom:20px;">
+        El mecanismo de infección de Mirai era brutalmente simple: un diccionario de <strong style="color:var(--white)">62 combinaciones usuario/contraseña por defecto</strong> usadas por los fabricantes de dispositivos IoT. Con solo ese diccionario, Mirai logró infectar cientos de miles de dispositivos.
+      </p>
+      <div class="cred-grid">
+        <div class="cred-pair"><div class="cred-user">root</div><div class="cred-pass">root</div></div>
+        <div class="cred-pair"><div class="cred-user">admin</div><div class="cred-pass">admin</div></div>
+        <div class="cred-pair"><div class="cred-user">admin</div><div class="cred-pass">1234</div></div>
+        <div class="cred-pair"><div class="cred-user">root</div><div class="cred-pass">vizxv</div></div>
+        <div class="cred-pair"><div class="cred-user">admin</div><div class="cred-pass">password</div></div>
+        <div class="cred-pair"><div class="cred-user">root</div><div class="cred-pass">xc3511</div></div>
+        <div class="cred-pair"><div class="cred-user">admin</div><div class="cred-pass">[vacío]</div></div>
+        <div class="cred-pair"><div class="cred-user">root</div><div class="cred-pass">7ujMko0admin</div></div>
+        <div class="cred-pair"><div class="cred-user">admin</div><div class="cred-pass">smcadmin</div></div>
+        <div class="cred-pair"><div class="cred-user">ubnt</div><div class="cred-pass">ubnt</div></div>
+        <div class="cred-pair"><div class="cred-user">pi</div><div class="cred-pass">raspberry</div></div>
+        <div class="cred-pair" style="background:rgba(255,184,0,0.05);border:1px solid rgba(255,184,0,0.2);">
+          <div style="font-family:var(--font-m);font-size:9px;color:var(--amber);margin-bottom:4px;">+ 50 combinaciones más</div>
+          <div style="font-size:11px;color:var(--muted);">Hardcoded por fabricantes de cámaras, DVRs, routers</div>
+        </div>
+      </div>
+      <div class="box a" style="margin-top:16px;">
+        <div class="box-i">📌</div>
+        <div class="box-t">Muchos de estos passwords son los que vienen de fábrica en dispositivos de Dahua, Hikvision, D-Link y otros fabricantes masivos de IoT. <strong>El problema no era el código de Mirai — era que estas contraseñas nunca habían sido cambiadas por millones de usuarios.</strong></div>
+      </div>
+    </div>
+
+    <!-- Tipos de ataque DDoS -->
+    <div class="panel pc">
+      <div class="ptitle c">⚡ TIPOS DE ATAQUE DDoS DISPONIBLES EN MIRAI</div>
+      <table class="vtable" style="margin-top:8px;">
+        <thead><tr><th>ID</th><th>Comando</th><th>Descripción del ataque</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--amber);font-weight:600;">0x1</td><td style="color:var(--white);">vse</td><td style="color:var(--muted);">Valve Source Engine — flood específico para servidores de videojuegos (objetivo original: Minecraft)</td></tr>
+          <tr><td style="color:var(--amber);">0x2</td><td style="color:var(--white);">dns</td><td style="color:var(--muted);">DNS resolver flood — inunda resolvers DNS con consultas masivas</td></tr>
+          <tr><td style="color:var(--amber);">0x3</td><td style="color:var(--white);">syn</td><td style="color:var(--muted);">SYN flood — agota la tabla de conexiones del servidor (TCP handshake incompleto)</td></tr>
+          <tr><td style="color:var(--amber);">0x4</td><td style="color:var(--white);">ack</td><td style="color:var(--muted);">ACK flood — inunda con paquetes ACK, omite la parte de handshake del SYN</td></tr>
+          <tr><td style="color:var(--amber);">0x9</td><td style="color:var(--white);">udp</td><td style="color:var(--muted);">UDP flood — envía datagramas UDP a puertos aleatorios, agota el ancho de banda</td></tr>
+          <tr><td style="color:var(--amber);">0xa</td><td style="color:var(--white);">http</td><td style="color:var(--muted);">HTTP flood — simula peticiones HTTP legítimas, difícil de filtrar sin afectar usuarios reales</td></tr>
+          <tr><td style="color:var(--amber);">0x6</td><td style="color:var(--white);">greip</td><td style="color:var(--muted);">GRE IP flood — usa encapsulación GRE para evitar filtros simples</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ EL ATAQUE PASO A PASO ════════════════════ -->
+<section id="ataque">
+  <div class="wrap">
+    <div class="sec-label">04 — El Ataque</div>
+    <h2 class="sec-title">Cómo Funcionaba el <span class="g">Ciclo de Infección</span></h2>
+
+    <p style="color:rgba(208,240,224,0.7);max-width:700px;margin-bottom:60px;font-size:17px;line-height:1.85;">
+      Mirai operaba en dos ciclos paralelos: uno de <strong style="color:var(--white)">propagación continua</strong> (infectar más dispositivos) y uno de <strong style="color:var(--white)">ataque a demanda</strong> (lanzar DDoS cuando el atacante lo ordene). Ambos ocurrían simultáneamente, las 24 horas.
+    </p>
+
+    <div class="journey">
+      <div class="j-line"></div>
+
+      <!-- CICLO DE INFECCIÓN -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-g">🔍</div></div>
+        <div class="j-card jl-g">
+          <div class="j-phase jp-g">Fase 1 — Propagación</div>
+          <div class="j-title">Escaneo Masivo de Internet en Busca de IoT Vulnerables</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Los dispositivos ya infectados (bots) <strong style="color:var(--white)">escaneaban internet continuamente</strong> buscando otros dispositivos con puertos Telnet (23) o SSH (22) abiertos. El escaneo era aleatorio sobre rangos de IPs públicas.</p>
+            <p style="margin-bottom:14px;">Cuando encontraban un dispositivo con Telnet abierto, intentaban iniciar sesión probando las 62 combinaciones de credenciales por defecto. Si alguna funcionaba, el bot reportaba la IP, usuario y contraseña al <strong style="color:var(--amber)">Scan Receiver</strong>.</p>
+          </div>
+          <div class="term" style="font-size:12px;margin-top:16px;">
+            <div class="term-h"><div class="td td1"></div><div class="td td2"></div><div class="td td3"></div><div class="term-t">Bot infectado — ciclo de escaneo</div></div>
+            <div class="term-b" style="padding:12px 16px;line-height:1.9;">
+              <div><span class="tc"># Cada bot escanea rangos de IPs aleatoriamente</span></div>
+              <div><span class="tg2">SCAN</span> <span class="tw">45.197.x.x:23</span> <span class="tc">→ OPEN</span></div>
+              <div><span class="tg2">TRY</span>  <span class="ta">root:root</span> <span class="tc">→ FAIL</span></div>
+              <div><span class="tg2">TRY</span>  <span class="ta">admin:admin</span> <span class="tc">→ FAIL</span></div>
+              <div><span class="tg2">TRY</span>  <span class="ta">root:vizxv</span> <span class="tc">→ <span class="tg2">SUCCESS ✓</span></span></div>
+              <div><span class="tg2">REPORT</span> <span class="tw">→ ScanReceiver:</span> <span class="tc2">45.197.x.x root:vizxv</span></div>
+            </div>
+          </div>
+          <div class="box g">
+            <div class="box-i">📊</div>
+            <div class="box-t">En su pico, Mirai escaneaba <strong>el internet completo en menos de una hora</strong>. Con 600,000 bots escaneando en paralelo, la velocidad de detección de dispositivos vulnerables era extraordinaria.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARGA DEL MALWARE -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-a">💉</div></div>
+        <div class="j-card jl-a">
+          <div class="j-phase jp-a">Fase 2 — Infección</div>
+          <div class="j-title">El Loader Instala el Malware en el Nuevo Dispositivo</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">El <strong style="color:var(--amber)">Scan Receiver</strong> recibía las credenciales del nuevo dispositivo vulnerable y las publicaba en su Standard Output (stdout). El <strong style="color:var(--amber)">Loader</strong>, que monitoreaba ese stdout, tomaba la información y se conectaba al nuevo dispositivo via Telnet.</p>
+            <p style="margin-bottom:14px;">El Loader iniciaba sesión, detectaba la arquitectura del procesador del dispositivo (ARM, MIPS, x86, PowerPC, etc.) y descargaba el ejecutable de Mirai correspondiente a esa arquitectura. El malware se ejecutaba en memoria — <strong style="color:var(--white)">no persistía en disco</strong>.</p>
+            <p>Por eso Mirai desaparecía con un simple reinicio. Pero como el escaneo era constante, el dispositivo podía ser reinfectado en minutos si no se cambiaba la contraseña.</p>
+          </div>
+          <div class="box a">
+            <div class="box-i">⚡</div>
+            <div class="box-t"><strong>Mirai borraba sus huellas:</strong> Una vez instalado en el dispositivo, el malware eliminaba su propio archivo ejecutable del sistema de archivos. Solo existía en RAM. Además, cerraba el puerto Telnet para evitar que otros bots (competidores) también infectaran el dispositivo.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGISTRO EN CNC -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-c">📡</div></div>
+        <div class="j-card jl-c">
+          <div class="j-phase jp-c">Fase 3 — Incorporación al Ejército</div>
+          <div class="j-title">El Bot Se Registra en el Servidor C&C</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">El nuevo bot infectado consultaba al <strong style="color:var(--cyan)">servidor DNS hardcodeado</strong> para obtener la IP del C&C (servidor de Comando y Control). Luego enviaba un paquete de registro con un payload específico (<code style="font-family:var(--font-m);color:var(--cyan)">0x00 0x00 0x00 0x01</code>) para anunciarse al CNC.</p>
+            <p>A partir de ahí, el bot enviaba pulsos periódicos al C&C (<code style="font-family:var(--font-m);color:var(--cyan)">0x00 0x00</code>) para indicar que seguía activo. El C&C mantenía una lista en tiempo real de todos los bots disponibles y podía consultarse con el comando <code style="font-family:var(--font-m);color:var(--cyan)">botcount</code>.</p>
+          </div>
+          <div class="box c">
+            <div class="box-i">🔗</div>
+            <div class="box-t"><strong>Diseño resiliente:</strong> El DNS hardcodeado era clave — si el atacante necesitaba mover el C&C a otra IP, solo actualizaba el DNS. Todos los bots resolverían el nuevo dominio automáticamente, sin necesitar actualizar el malware.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ATAQUE DDoS -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-r">💥</div></div>
+        <div class="j-card jl-r">
+          <div class="j-phase jp-r">Fase 4 — El Ataque DDoS</div>
+          <div class="j-title">La Orden de Ataque: Cientos de Miles de Dispositivos Simultáneos</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">Cuando el atacante decidía lanzar un DDoS, se conectaba al CNC via Telnet y escribía un comando como:</p>
+            <div class="term" style="font-size:12px;margin:12px 0;">
+              <div class="term-h"><div class="td td1"></div><div class="td td2"></div><div class="td td3"></div><div class="term-t">CNC Shell — Orden de ataque</div></div>
+              <div class="term-b" style="padding:12px 16px;line-height:1.9;">
+                <div><span class="tc"># Sintaxis: [tipo] [ip_objetivo/máscara] [duración_segundos]</span></div>
+                <div><span class="tg2">mirai@cnc:~$</span> <span class="tw">udp 8.8.8.8/32 300</span></div>
+                <div><span class="tc"># → Todos los bots activos lanzan UDP flood</span></div>
+                <div><span class="tc"># → contra 8.8.8.8 durante 300 segundos</span></div>
+                <div>&nbsp;</div>
+                <div><span class="tg2">mirai@cnc:~$</span> <span class="tw">http 172.x.x.x/24 99</span></div>
+                <div><span class="tc"># → HTTP flood (L7) — más difícil de filtrar</span></div>
+                <div>&nbsp;</div>
+                <div><span class="tg2">mirai@cnc:~$</span> <span class="tw">botcount</span></div>
+                <div><span class="tc2">▸ 623,441 bots activos</span></div>
+              </div>
+            </div>
+            <p>El C&C transmitía la orden a todos los bots activos. Cada bot comenzaba a inundar el objetivo con el tipo de paquetes especificado. Con 600,000 dispositivos enviando tráfico simultáneamente, el volumen alcanzaba cientos de Gbps — más de lo que cualquier servidor podía absorber.</p>
+          </div>
+          <div class="box r">
+            <div class="box-i">🎯</div>
+            <div class="box-t"><strong>El ataque a Dyn el 21 de octubre de 2016</strong> fue devastador porque Dyn era un proveedor DNS crítico. Cuando el DNS cae, los navegadores no pueden traducir "twitter.com" a su IP — aunque los servidores de Twitter estén perfectamente bien. Era como derribar la agenda telefónica.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DYN Y EL DÍA QUE INTERNET SE CAYÓ -->
+      <div class="j-step">
+        <div style="padding-top:8px;flex-shrink:0;"><div class="j-node jn-t">🌍</div></div>
+        <div class="j-card jl-t">
+          <div class="j-phase jp-t">Fase 5 — El Día que Internet Se Cayó</div>
+          <div class="j-title">21 de Octubre 2016 — El Ataque a Dyn</div>
+          <div class="j-body">
+            <p style="margin-bottom:14px;">El ataque a Dyn se desarrolló en <strong style="color:var(--teal)">tres oleadas consecutivas</strong>. La primera comenzó a las 7:00 AM ET. El DDoS saturó los servidores DNS de Dyn con peticiones masivas desde decenas de millones de IPs diferentes — imposible de bloquear por IP.</p>
+            <p style="margin-bottom:14px;">Los sitios caídos no eran víctimas directas del DDoS — eran víctimas <strong style="color:var(--white)">indirectas</strong>. Sus servidores estaban perfectamente bien, pero nadie podía llegar a ellos porque el DNS (Dyn) no respondía.</p>
+            <div style="margin:16px 0;display:flex;flex-wrap:wrap;gap:8px;">
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">🐦 Twitter</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">📺 Netflix</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">🐙 GitHub</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">👾 Reddit</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">🏠 Airbnb</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">📦 Amazon</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">💳 PayPal</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">📰 NYT</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">🎵 Spotify</span>
+              <span style="font-family:var(--font-m);font-size:11px;padding:6px 12px;background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--teal);">+ 1,200 más</span>
+            </div>
+            <p>Dyn logró mitigar el ataque en aproximadamente 2 horas — más rápido que el promedio para ataques DDoS. Pero las consecuencias en términos de reputación y pérdida de clientes fueron duraderas: <strong style="color:var(--amber)">más de 14,000 plataformas (8% de sus clientes) dejaron Dyn</strong> tras el incidente.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end journey -->
+  </div>
+</section>
+
+<!-- ════════════════════ DISPOSITIVOS IoT ════════════════════ -->
+<section id="iot-victims">
+  <div class="wrap">
+    <div class="sec-label">05 — Víctimas del Ejército</div>
+    <h2 class="sec-title">Los <span class="g">Dispositivos</span> Que Fueron Armas</h2>
+
+    <p style="color:rgba(208,240,224,0.7);max-width:700px;margin-bottom:44px;font-size:17px;line-height:1.85;">
+      La tragedia de Mirai es que los "soldados" de su ejército eran objetos cotidianos en manos de personas que no sabían nada de ciberseguridad. El fabricante los vendía con contraseñas fijas; el usuario nunca las cambiaba; el atacante se los llevaba.
+    </p>
+
+    <div class="iot-grid">
+      <div class="iot-card ig">
+        <span class="iot-icon">📷</span>
+        <div class="iot-name">Cámaras IP</div>
+        <div class="iot-vuln" style="color:var(--red);">Vector principal</div>
+        <div class="iot-desc">La mayor fuente de bots en Mirai. Fabricantes como Dahua y Hikvision usaban contraseñas hardcodeadas que no podían cambiarse sin actualizar el firmware completo.</div>
+      </div>
+      <div class="iot-card ig">
+        <span class="iot-icon">📹</span>
+        <div class="iot-name">DVRs / NVRs</div>
+        <div class="iot-vuln" style="color:var(--red);">Alta vulnerabilidad</div>
+        <div class="iot-desc">Grabadoras de video digital para CCTV. Siempre encendidas, alta capacidad de red, credenciales root por defecto. Ideales como bots de alto tráfico.</div>
+      </div>
+      <div class="iot-card ic">
+        <span class="iot-icon">📡</span>
+        <div class="iot-name">Routers domésticos</div>
+        <div class="iot-vuln" style="color:var(--amber);">Alta exposición</div>
+        <div class="iot-desc">D-Link, Netgear, TP-Link. Millones de unidades con admin/admin o root/root. Puerta de entrada a toda la red doméstica y excelente ancho de banda de salida.</div>
+      </div>
+      <div class="iot-card ic">
+        <span class="iot-icon">🖨️</span>
+        <div class="iot-name">Impresoras en red</div>
+        <div class="iot-vuln" style="color:var(--amber);">Ignoradas</div>
+        <div class="iot-desc">Las impresoras de red corren Linux embebido y casi nunca se actualizan. Sus administradores de sistema raramente piensan en asegurarlas.</div>
+      </div>
+      <div class="iot-card ic">
+        <span class="iot-icon">🌡️</span>
+        <div class="iot-name">Sensores ambientales</div>
+        <div class="iot-vuln" style="color:var(--green);">Media</div>
+        <div class="iot-desc">Monitores de temperatura, calidad de aire, sistemas de automatización industrial con interfaces web. Casi nunca parcheados.</div>
+      </div>
+      <div class="iot-card ia">
+        <span class="iot-icon">📺</span>
+        <div class="iot-name">Smart TVs / Mediacenter</div>
+        <div class="iot-vuln" style="color:var(--green);">Media</div>
+        <div class="iot-desc">Dispositivos Android TV y Linux embebido. Si corren Telnet o SSH con credenciales default, son candidatos perfectos para botnet.</div>
+      </div>
+      <div class="iot-card ia">
+        <span class="iot-icon">👶</span>
+        <div class="iot-name">Monitores de bebés</div>
+        <div class="iot-vuln" style="color:var(--amber);">Media</div>
+        <div class="iot-desc">Dispositivos con cámara y conexión a internet. Notoriamente inseguros — muchos fueron parte del botnet Mirai y también víctimas de espionaje.</div>
+      </div>
+      <div class="iot-card ig">
+        <span class="iot-icon">🏠</span>
+        <div class="iot-name">Gateways de hogar</div>
+        <div class="iot-vuln" style="color:var(--red);">Alta exposición</div>
+        <div class="iot-desc">Hubs de automatización del hogar. Port 7547 (TR-069/SOAP) explotado por variantes de Mirai — así cayeron 900,000 routers de Deutsche Telekom.</div>
+      </div>
+    </div>
+
+    <div class="quote" style="margin-top:32px;">
+      "El botnet Mirai empleó cien mil dispositivos IoT secuestrados para derribar a Dyn. No necesitaban sofisticación técnica — solo escala. Con más de mil millones de dispositivos con procesador ARC inundando el mercado cada año, el potencial de ataques similares sigue creciendo."
+      <div class="quote-src">— Cloudflare, Mirai Botnet Analysis</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ ANÁLISIS FORENSE ════════════════════ -->
+<section id="forense">
+  <div class="wrap">
+    <div class="sec-label">06 — Análisis Forense</div>
+    <h2 class="sec-title">¿Qué Dejan los <span class="c">Servidores</span> del Botnet?</h2>
+
+    <p style="color:rgba(208,240,224,0.7);max-width:700px;margin-bottom:44px;font-size:17px;line-height:1.85;">
+      Según el estudio forense de Zhang et al. (2020) publicado en <em>Forensic Science International</em>, que analizó un botnet Mirai completo recreado en laboratorio, los servidores del botnet dejan rastros valiosos en múltiples lugares. Esto es lo que un investigador puede recuperar.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;" class="rg2">
+
+      <div class="panel pc">
+        <div class="ptitle c">🖥️ SERVIDOR CNC — El Más Valioso</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:rgba(208,240,224,0.75);line-height:1.7;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--cyan);">
+            <strong style="color:var(--white);">Código fuente:</strong> La IP de la base de datos y credenciales en texto plano en <code style="font-family:var(--font-m);font-size:11px;">/mirai/cnc/main.go</code>
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--cyan);">
+            <strong style="color:var(--white);">Ejecutable CNC:</strong> Ingeniería inversa con Ghidra revela IPs y credenciales hardcodeadas aunque no haya código fuente.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--cyan);">
+            <strong style="color:var(--white);">Memoria RAM (live process):</strong> Lista completa de bots activos con sus IPs. El dump de memoria es la <em>única</em> fuente con la lista integra de bots en tiempo real.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--cyan);">
+            <strong style="color:var(--white);">Paquetes de red:</strong> Comandos de ataque en texto plano via Telnet (un carácter por paquete), credenciales MySQL en un solo paquete.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel pa">
+        <div class="ptitle a">🗄️ BASE DE DATOS MySQL — Historial Completo</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:rgba(208,240,224,0.75);line-height:1.7;">
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            <strong style="color:var(--white);">Tabla history:</strong> Historial completo de comandos DDoS — quién, cuándo, qué tipo, cuánto tiempo, objetivo.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            <strong style="color:var(--white);">Tabla users:</strong> Credenciales de los usuarios del CNC — permite establecer culpabilidad del operador del botnet.
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            <strong style="color:var(--white);">Tabla whitelist:</strong> IPs que Mirai evitaba atacar — incluye IPs del Departamento de Defensa de EEUU (hardcodeado en el código original).
+          </div>
+          <div style="padding:10px 14px;background:var(--surface);border-left:2px solid var(--amber);">
+            <strong style="color:var(--white);">Dump remoto:</strong> Con las credenciales recuperadas del CNC, se puede volcar toda la BD con <code style="font-family:var(--font-m);font-size:11px;">mysqldump</code> sin acceso físico.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Herramientas forenses usadas -->
+    <div class="panel pt">
+      <div class="ptitle t">🔬 HERRAMIENTAS FORENSES UTILIZADAS EN EL ESTUDIO</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px;margin-top:12px;">
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">LiME</div>
+          <div style="font-size:12px;color:var(--muted);">Linux Memory Extractor — adquisición de imagen RAM en caliente.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Volatility 2.6</div>
+          <div style="font-size:12px;color:var(--muted);">Análisis forense de memoria RAM — localización de procesos y datos en memoria.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Ghidra 9.0.4</div>
+          <div style="font-size:12px;color:var(--muted);">NSA open-source — ingeniería inversa de ejecutables Golang del CNC.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Autopsy 4.11</div>
+          <div style="font-size:12px;color:var(--muted);">Análisis de imágenes de disco — recuperación de archivos eliminados.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Wireshark 3.0</div>
+          <div style="font-size:12px;color:var(--muted);">Captura y análisis de paquetes de red — recupera comandos Telnet y MySQL.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Bulk Extractor</div>
+          <div style="font-size:12px;color:var(--muted);">Extrae paquetes de red desde el dump de memoria — sin acceso a tráfico live.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">DD 8.3</div>
+          <div style="font-size:12px;color:var(--muted);">Adquisición de imagen de disco bit a bit — preserva evidencia forense.</div>
+        </div>
+        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--teal);margin-bottom:4px;">Raspberry Pi 3</div>
+          <div style="font-size:12px;color:var(--muted);">Modelo de dispositivos IoT ARM para el entorno de prueba — procesador típico de cámaras IP.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box g" style="margin-top:24px;">
+      <div class="box-i">📋</div>
+      <div class="box-t"><strong>Prioridad forense:</strong> El estudio concluye que el CNC Server y el MySQL Server son la prioridad #1, ya que garantizan lista de bots + historial de ataques + credenciales de otros servidores. El Scan Receiver/Loader es prioridad #2. El DNS y el terminal del atacante tienen la menor prioridad forense.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ IMPACTO ════════════════════ -->
+<section id="impacto">
+  <div class="wrap">
+    <div class="sec-label">07 — Consecuencias</div>
+    <h2 class="sec-title">Impacto <span class="r">Real</span> y Legado</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:40px;" class="rg2">
+      <div>
+        <h3 style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--amber);margin-bottom:20px;">Escala del daño</h3>
+        <div class="ibar-wrap">
+          <div class="ibar-row">
+            <div class="ibar-label">Pico DDoS (OVH)</div>
+            <div class="ibar"><div class="ibar-fill" style="width:100%;background:var(--red);"></div></div>
+            <div class="ibar-val" style="color:var(--red);">1 Tbps</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Pico DDoS (Krebs)</div>
+            <div class="ibar"><div class="ibar-fill" style="width:62%;background:var(--orange);"></div></div>
+            <div class="ibar-val" style="color:var(--orange);">620 Gbps</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Bots infectados</div>
+            <div class="ibar"><div class="ibar-fill" style="width:100%;background:var(--green);"></div></div>
+            <div class="ibar-val" style="color:var(--green);">600K+</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Sitios caídos (Dyn)</div>
+            <div class="ibar"><div class="ibar-fill" style="width:80%;background:var(--amber);"></div></div>
+            <div class="ibar-val" style="color:var(--amber);">1,200+</div>
+          </div>
+          <div class="ibar-row">
+            <div class="ibar-label">Clientes perdidos Dyn</div>
+            <div class="ibar"><div class="ibar-fill" style="width:8%;background:var(--cyan);"></div></div>
+            <div class="ibar-val" style="color:var(--cyan);">8%</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--amber);margin-bottom:20px;">Consecuencias documentadas</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--red);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">🌐 Fragmentación de internet por horas</div>
+            <div style="font-size:13px;color:var(--muted);">Millones de usuarios en Norteamérica y Europa sin acceso a servicios críticos durante casi un día completo.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--amber);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">📉 Colapso reputacional de Dyn</div>
+            <div style="font-size:13px;color:var(--muted);">14,000 plataformas (8% de clientes) migraron de Dyn tras el incidente. El impacto reputacional superó al económico directo.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--amber);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">📜 Código liberado → variantes proliferaron</div>
+            <div style="font-size:13px;color:var(--muted);">La liberación del código fuente en octubre 2016 generó docenas de variantes (Satori, Okiru, Masuta, OMG, Reaper) con capacidades expandidas.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--green);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">📋 Regulación IoT acelerada</div>
+            <div style="font-size:13px;color:var(--muted);">Mirai aceleró legislación de seguridad IoT en EEUU y Europa. NIST, IoT Cybersecurity Improvement Act (2020) y regulaciones de la UE surgieron directamente de lecciones de Mirai.</div>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--cyan);">
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px;">🔬 Investigación forense IoT impulsada</div>
+            <div style="font-size:13px;color:var(--muted);">Mirai fue el primer caso forense comprehensivo de botnet IoT publicado en literatura académica, estableciendo metodologías para futuros casos.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variantes -->
+    <div class="panel pa">
+      <div class="ptitle a">🧬 LOS DESCENDIENTES — El Código Que Nunca Muere</div>
+      <p style="font-size:15px;color:rgba(208,240,224,0.75);line-height:1.8;margin-bottom:20px;">
+        La liberación del código fuente fue el punto de inflexión. Cualquier persona podía adaptar Mirai. Las variantes proliferaron rápidamente:
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px;">
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--amber);margin-bottom:4px;">Satori (Dic 2017)</div>
+          <div style="font-size:12px;color:var(--muted);">Explota CVE-2017-17215 en routers Huawei HG532. Crecimiento masivo al no requerir credenciales — usaba exploits RCE directos.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--amber);margin-bottom:4px;">Okiru (Ene 2018)</div>
+          <div style="font-size:12px;color:var(--muted);">Primera variante que ataca procesadores ARC — expande el target a millones de dispositivos con un procesador diferente al original ARM/MIPS.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--amber);margin-bottom:4px;">OMG (2018)</div>
+          <div style="font-size:12px;color:var(--muted);">Convierte dispositivos IoT infectados en proxies anónimos. Los atacantes los alquilan en la dark web para anonimizar su tráfico.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--amber);margin-bottom:4px;">Reaper / IoTrooper</div>
+          <div style="font-size:12px;color:var(--muted);">Más sofisticado que Mirai — usa exploits de vulnerabilidades reales en lugar de solo credenciales default. Compromete dispositivos a mayor velocidad.</div>
+        </div>
+        <div style="padding:16px;background:var(--surface);border:1px solid var(--border);">
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--red);margin-bottom:4px;">Aisuru (Ago 2024)</div>
+          <div style="font-size:12px;color:var(--muted);">300,000+ dispositivos comprometidos. En febrero 2026 fue responsable del mayor DDoS jamás registrado: <strong style="color:var(--red)">31.4 Tbps</strong> contra Cloudflare.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ LECCIONES ════════════════════ -->
+<section id="lecciones">
+  <div class="wrap">
+    <div class="sec-label">08 — Lecciones Aprendidas</div>
+    <h2 class="sec-title">Lo que <span class="a">Cambió</span> — y lo que No</h2>
+
+    <p style="color:rgba(208,240,224,0.7);max-width:680px;margin-bottom:48px;font-size:17px;line-height:1.85;">
+      Mirai es el caso que puso la seguridad IoT en el mapa. Fue el primero en demostrar que los dispositivos cotidianos — no los servidores ni los PCs — podían convertirse en armas de destrucción masiva digital.
+    </p>
+
+    <div class="lessons-grid">
+
+      <div class="lesson">
+        <div class="lesson-n">01</div>
+        <div class="lesson-title">Las contraseñas por defecto son inaceptables</div>
+        <div class="lesson-desc">El vector principal de Mirai era trivial: una lista de 62 contraseñas de fábrica. Los fabricantes deben obligar a cambiar la contraseña en el primer uso, o mejor aún, usar contraseñas únicas por dispositivo impresas en la etiqueta. Esto solo.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">02</div>
+        <div class="lesson-title">Los dispositivos IoT deben ser actualizables</div>
+        <div class="lesson-desc">Muchos dispositivos IoT no tienen mecanismo de actualización de firmware. Si tienen una vulnerabilidad, nunca puede ser parcheada. Todo dispositivo conectado a internet debe soportar actualizaciones de seguridad automáticas durante toda su vida útil.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">03</div>
+        <div class="lesson-title">El DNS es infraestructura crítica</div>
+        <div class="lesson-desc">Dyn era un proveedor DNS concentrado. Miles de servicios dependían de él. El ataque no necesitó tocar Twitter o Netflix — solo derribar su resolución DNS. La redundancia de DNS con múltiples proveedores es ahora práctica estándar post-Mirai.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">04</div>
+        <div class="lesson-title">La escala supera la sofisticación</div>
+        <div class="lesson-desc">Mirai no usó zero-days ni técnicas avanzadas. Su poder vino de la escala: 600,000 dispositivos enviando tráfico simultáneo. Un ataque simple multiplicado por suficientes nodos puede derribar cualquier infraestructura. El volumen es un arma en sí mismo.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">05</div>
+        <div class="lesson-title">Liberar código fuente tiene consecuencias duraderas</div>
+        <div class="lesson-desc">Cuando los creadores liberaron el código de Mirai para dificultar la atribución, crearon una plataforma de ataque que usarían decenas de actores maliciosos. En 2026, variantes de Mirai siguen batiendo récords. El código de 2016 sigue vivo diez años después.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">06</div>
+        <div class="lesson-title">La seguridad IoT requiere regulación</div>
+        <div class="lesson-desc">El mercado solo no resuelve el problema: los fabricantes tienen incentivo de reducir costos, no de añadir seguridad. Mirai impulsó legislación como la IoT Cybersecurity Improvement Act (EEUU, 2020) y la Cyber Resilience Act (UE, 2024) que obligan estándares mínimos.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">07</div>
+        <div class="lesson-title">El servidor CNC es la joya forense</div>
+        <div class="lesson-desc">Para investigadores: el dump de memoria RAM del CNC es la única fuente que contiene la lista completa e íntegra de bots activos. La base de datos MySQL tiene el historial de ataques completo. Priorizar estos dos elementos es clave en una investigación de botnet.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">08</div>
+        <div class="lesson-title">Segmentar la red IoT de la red corporativa</div>
+        <div class="lesson-desc">Los dispositivos IoT no deben estar en la misma red que sistemas críticos. Un router comprometido no debería poder acceder a servidores internos. La micro-segmentación y VLANs dedicadas para IoT limitan el blast radius si un dispositivo es comprometido.</div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-n">09</div>
+        <div class="lesson-title">El usuario final no puede ser el último responsable</div>
+        <div class="lesson-desc">Es irreal esperar que el dueño de una cámara IP de $20 cambie sus credenciales y aplique parches de firmware. La seguridad debe ser el estado por defecto del producto, no algo que el usuario debe activar. Secure-by-design, no secure-by-instruction.</div>
+      </div>
+
+    </div>
+
+    <!-- Terminal final -->
+    <div class="term" style="margin-top:56px;">
+      <div class="term-h"><div class="td td1"></div><div class="td td2"></div><div class="td td3"></div><div class="term-t">Mirai — Estado actual 2026</div></div>
+      <div class="term-b" style="font-size:13px;">
+        <div><span class="tc"># MIRAI — STATUS REPORT 2026</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tg2">CREADORES ORIGINALES:</span>      <span class="tw">Culpables declarados · probation</span></div>
+        <div><span class="tg2">CÓDIGO FUENTE:</span>             <span class="tr">Público en GitHub desde 2016</span></div>
+        <div><span class="tg2">VARIANTES ACTIVAS:</span>         <span class="tr">↑↑ Decenas — Satori, Okiru, Aisuru...</span></div>
+        <div><span class="tg2">RÉCORD DDoS (Aisuru, 2026):</span><span class="tr"> 31.4 Tbps — contra Cloudflare</span></div>
+        <div><span class="tg2">REGULACIÓN IoT (EEUU/UE):</span> <span class="ta">En vigor — IoT Cybersecurity Act</span></div>
+        <div><span class="tg2">DISPOSITIVOS VULNERABLES:</span>  <span class="tr">Millones siguen sin parchear</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tc"># El código que tres universitarios escribieron para</span></div>
+        <div><span class="tc"># atacar servidores de Minecraft en 2016 sigue siendo</span></div>
+        <div><span class="tc"># la base de los ataques DDoS más grandes de la historia.</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tc"># "Mirai" significa "futuro" en japonés.</span></div>
+        <div><span class="tc"># Cumplió su nombre.</span></div>
+        <div>&nbsp;</div>
+        <div><span class="tg2">mirai@botnet:~$</span> <span class="blink" style="color:var(--green);">█</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<footer>
+  <span class="footer-logo">MIRAI://BOTNET</span>
+  <p style="margin-bottom:8px;">Análisis Forense de Ciberseguridad — Caso de Estudio Educativo</p>
+  <p>Fuentes: Zhang et al. (DFRWS 2020) · Cloudflare · CISA · Wikipedia · KrebsOnSecurity · NJCCIC</p>
+  <p style="margin-top:14px;color:rgba(42,74,56,0.5);font-size:10px;">
+    IoT Botnet · DDoS · Telnet · Credenciales Default · CNC · Scan Receiver · Loader · DNS · MySQL<br>
+    Paras Jha · Josiah White · Dalton Norman · Dyn Attack 21 Oct 2016 · 620 Gbps · 1 Tbps · 31.4 Tbps (2026)
+  </p>
+</footer>
+
+<style>
+  @media(max-width:900px){.rg2-3{grid-template-columns:1fr 1fr!important}}
+  @media(max-width:768px){.rg2{grid-template-columns:1fr!important}}
+</style>
+
+<script>
+  // Journey steps
+  const jObs = new IntersectionObserver((e) => {
+    e.forEach((entry,i)=>{ if(entry.isIntersecting) setTimeout(()=>entry.target.classList.add('vis'),i*80); });
+  }, {threshold:0.1});
+  document.querySelectorAll('.j-step').forEach(s => jObs.observe(s));
+
+  // Fade in
+  const fObs = new IntersectionObserver((e) => {
+    e.forEach(entry=>{ if(entry.isIntersecting) entry.target.classList.add('vis'); });
+  }, {threshold:0.08});
+  document.querySelectorAll('.panel,.iot-card,.lesson,.fade-in').forEach(el => {
+    el.classList.add('fade-in');
+    fObs.observe(el);
+  });
+
+  // Impact bars
+  const iObs = new IntersectionObserver((e) => {
+    e.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.querySelectorAll('.ibar-fill').forEach(bar=>{
+          const w=bar.style.width;
+          bar.style.width='0';
+          setTimeout(()=>{ bar.style.width=w; },100);
+        });
+      }
+    });
+  }, {threshold:0.3});
+  document.querySelectorAll('.ibar-wrap').forEach(el=>iObs.observe(el));
+
+  // Nav active
+  const secs = document.querySelectorAll('section[id]');
+  const navAs = document.querySelectorAll('.nav-a');
+  window.addEventListener('scroll', () => {
+    let cur='';
+    secs.forEach(s=>{ if(window.scrollY>=s.offsetTop-120) cur=s.id; });
+    navAs.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+  });
+
+  // Glitch on title
+  const t1 = document.querySelector('.hero h1 .l1');
+  if(t1){
+    setInterval(()=>{
+      t1.style.textShadow='3px 0 #00e5ff,-3px 0 #ff6b00,0 0 40px rgba(0,255,136,0.4)';
+      setTimeout(()=>{
+        t1.style.textShadow='0 0 24px rgba(0,255,136,0.4),0 0 80px rgba(0,255,136,0.15)';
+      },120);
+    }, 4500);
+  }
+</script>
+</body>
+</html>
